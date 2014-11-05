@@ -1,0 +1,1316 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   id="svg8533"
+   version="1.1"
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="flusso dati - invio dei dati.svg">
+  <defs
+     id="defs3">
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Mend"
+       style="overflow:visible;">
+      <path
+         id="path3890"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         transform="scale(0.4) rotate(180) translate(10,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-2"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-8"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-0"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-2"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-07"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-1"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-3"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-3"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-1"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-82"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-8"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-0"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-5"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-12"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-06"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-18"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-17"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-4"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker3076"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3078"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker3080"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3082"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker3084"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3086"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker3088"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3090"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker3092"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3094"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker3096"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3098"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker3100"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3102"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker3104"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3106"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-50"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-9"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-4"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-6"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-88"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-29"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-9"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-7"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-16"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3890-5"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     inkscape:document-units="mm"
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.98994949"
+     inkscape:cx="248.14326"
+     inkscape:cy="539.23748"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1366"
+     inkscape:window-height="706"
+     inkscape:window-x="1272"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata4">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g9598"
+       transform="translate(0,83.842661)"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:connector-curvature="0"
+         id="path8577"
+         d="M 438.57143,87.362182 222.14286,98.790753"
+         style="fill:none;stroke:#000000;stroke-width:0.99921262;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text9271"
+         y="79.505043"
+         x="325.71429"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="79.505043"
+           x="325.71429"
+           id="tspan9273"
+           sodipodi:role="line">dispositivo attivo</tspan></text>
+    </g>
+    <g
+       id="g9293"
+       transform="translate(12.142857,106.26036)"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <g
+         id="g8545-3"
+         transform="translate(363.57143,-220.71429)">
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+           x="141.50278"
+           y="276.97546"
+           id="text8541-9"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8543-8"
+             x="141.50278"
+             y="276.97546">wake up</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45144343;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect8539-6"
+         width="137.14285"
+         height="42.188808"
+         x="436.42856"
+         y="30.55349"
+         ry="7.5218883" />
+    </g>
+    <g
+       id="g9821"
+       transform="translate(-2.8571478,78.7919)"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         inkscape:connector-curvature="0"
+         id="path9299"
+         d="M 216.41262,147.36218 437.1269,166.6479"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend)" />
+      <text
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         sodipodi:linespacing="125%"
+         id="text9271-5"
+         y="145.79578"
+         x="325.71429"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="145.79578"
+           x="325.71429"
+           id="tspan9273-0"
+           sodipodi:role="line">richiesta taratura</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend)"
+       d="M 216.41262,360.93089 437.1269,380.21661"
+       id="path9299-4"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:50%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="320"
+       y="330.79694"
+       id="text9539"
+       sodipodi:linespacing="50%"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan9541"
+         x="320"
+         y="330.79694"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:50%;writing-mode:lr-tb;text-anchor:middle;font-family:Nyala;-inkscape-font-specification:Nyala">.</tspan><tspan
+         sodipodi:role="line"
+         x="320"
+         y="338.79694"
+         id="tspan9543"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:50%;writing-mode:lr-tb;text-anchor:middle;font-family:Nyala;-inkscape-font-specification:Nyala">.</tspan><tspan
+         sodipodi:role="line"
+         x="320"
+         y="346.79694"
+         id="tspan9545"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:50%;writing-mode:lr-tb;text-anchor:middle;font-family:Nyala;-inkscape-font-specification:Nyala">.</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="325.71429"
+       y="361.3913"
+       id="text9271-5-8"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan9273-0-6"
+         x="325.71429"
+         y="361.3913">altre richieste</tspan></text>
+    <g
+       id="g9293-5"
+       transform="translate(12.142857,345.66986)"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <g
+         id="g8545-3-0"
+         transform="translate(363.57143,-220.71429)">
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+           x="141.76059"
+           y="267.54187"
+           id="text8541-9-9"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8543-8-0"
+             x="141.76059"
+             y="267.54187">Accesso alla</tspan><tspan
+             sodipodi:role="line"
+             x="141.76059"
+             y="287.54187"
+             id="tspan9893">memoria</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45144343;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect8539-6-0"
+         width="137.14285"
+         height="42.188808"
+         x="436.42856"
+         y="30.55349"
+         ry="7.5218883" />
+    </g>
+    <g
+       id="g9293-5-6"
+       transform="translate(12.142857,457.04407)"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <g
+         id="g8545-3-0-1"
+         transform="translate(363.57143,-220.71429)">
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+           x="141.50278"
+           y="276.97546"
+           id="text8541-9-9-3"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8543-8-0-8"
+             x="141.50278"
+             y="276.97546">Sleep</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45144343;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect8539-6-0-9"
+         width="137.14285"
+         height="42.188808"
+         x="436.42856"
+         y="30.55349"
+         ry="7.5218883" />
+    </g>
+    <g
+       transform="translate(-2.8571478,109.21328)"
+       id="g9821-7"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         inkscape:connector-curvature="0"
+         id="path9299-7"
+         d="M 216.41262,147.36218 437.1269,166.6479"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend)" />
+      <text
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         sodipodi:linespacing="125%"
+         id="text9271-5-7"
+         y="145.79578"
+         x="325.71429"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="145.79578"
+           x="325.71429"
+           id="tspan9273-0-7"
+           sodipodi:role="line">richiesta selfcheck</tspan></text>
+    </g>
+    <g
+       transform="translate(-2.8571478,139.62683)"
+       id="g9821-5"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         inkscape:connector-curvature="0"
+         id="path9299-9"
+         d="M 216.41262,147.36218 437.1269,166.6479"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend)" />
+      <text
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         sodipodi:linespacing="125%"
+         id="text9271-5-9"
+         y="145.79578"
+         x="325.71429"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="145.79578"
+           x="325.71429"
+           id="tspan9273-0-8"
+           sodipodi:role="line">richiesta errori</tspan></text>
+    </g>
+    <g
+       transform="translate(-2.8571478,170.04428)"
+       id="g9821-6"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         inkscape:connector-curvature="0"
+         id="path9299-6"
+         d="M 216.41262,147.36218 437.1269,166.6479"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend)" />
+      <text
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         sodipodi:linespacing="125%"
+         id="text9271-5-0"
+         y="145.79578"
+         x="325.71429"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="145.79578"
+           x="325.71429"
+           id="tspan9273-0-3"
+           sodipodi:role="line">richiesta dati</tspan></text>
+    </g>
+    <g
+       id="g9598-1"
+       transform="translate(0,332.72791)"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:connector-curvature="0"
+         id="path8577-2"
+         d="M 438.57143,87.362182 222.14286,98.790753"
+         style="fill:none;stroke:#000000;stroke-width:0.99921262;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text9271-50"
+         y="79.505043"
+         x="325.71429"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="79.505043"
+           x="325.71429"
+           id="tspan9273-9"
+           sodipodi:role="line">invio dati</tspan></text>
+    </g>
+    <g
+       id="g8545-4"
+       transform="translate(2.1428623,189.12607)"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <rect
+         ry="7.5218883"
+         y="240.93361"
+         x="72.85714"
+         height="42.188808"
+         width="137.14285"
+         id="rect8539-7"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45144343;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text8541-8"
+         y="266.6413"
+         x="141.5145"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="266.6413"
+           x="141.5145"
+           id="tspan8543-3"
+           sodipodi:role="line">Memorizzazione ID</tspan></text>
+    </g>
+    <g
+       transform="translate(2.8402733,325.75857)"
+       id="g9821-6-0"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         inkscape:connector-curvature="0"
+         id="path9299-6-1"
+         d="M 216.41262,147.36218 437.1269,166.6479"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend)" />
+      <text
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         sodipodi:linespacing="125%"
+         id="text9271-5-0-6"
+         y="145.79578"
+         x="325.71429"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="145.79578"
+           x="325.71429"
+           id="tspan9273-0-3-4"
+           sodipodi:role="line">conferma ricezione</tspan></text>
+    </g>
+    <g
+       id="g9821-9"
+       transform="translate(-1.8737422,-29.812401)"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         inkscape:connector-curvature="0"
+         id="path9299-8"
+         d="M 216.41262,147.36218 437.1269,166.6479"
+         style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:6, 6;stroke-dashoffset:0;marker-end:url(#Arrow1Mend)" />
+      <text
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         sodipodi:linespacing="125%"
+         id="text9271-5-4"
+         y="145.79578"
+         x="325.71429"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="145.79578"
+           x="325.71429"
+           id="tspan9273-0-1"
+           sodipodi:role="line">attiva dispositivo</tspan></text>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="151.83928"
+       y="63.815865"
+       id="text8541-9-4"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan8543-8-3"
+         x="151.83928"
+         y="63.815865">WEB SERVER</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="519.36292"
+       y="53.815861"
+       id="text8541-9-4-9"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan8543-8-3-8"
+         x="519.36292"
+         y="53.815861">DISPOSITIVO DI</tspan><tspan
+         sodipodi:role="line"
+         x="519.36292"
+         y="73.815865"
+         id="tspan10076">MISURA</tspan></text>
+    <g
+       id="g9598-0"
+       transform="translate(-6.0714243,615.83216)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:connector-curvature="0"
+         id="path8577-9"
+         d="M 438.57143,87.362182 222.14286,98.790753"
+         style="fill:none;stroke:#000000;stroke-width:0.99921262;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text9271-4"
+         y="88.790756"
+         x="342.85715"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="88.790756"
+           x="342.85715"
+           id="tspan9273-8"
+           sodipodi:role="line">verifica presenza server http</tspan><tspan
+           y="108.79076"
+           x="342.85715"
+           sodipodi:role="line"
+           id="tspan3341">GET /index.php?DATA=&lt;ID&gt;*</tspan></text>
+    </g>
+    <g
+       id="g9293-8"
+       transform="translate(6.0714357,638.24986)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <g
+         id="g8545-3-2"
+         transform="translate(363.57143,-220.71429)">
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+           x="141.50278"
+           y="276.97546"
+           id="text8541-9-45"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8543-8-5"
+             x="141.50278"
+             y="276.97546">wake up</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45144343;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect8539-6-1"
+         width="137.14285"
+         height="42.188808"
+         x="436.42856"
+         y="30.55349"
+         ry="7.5218883" />
+    </g>
+    <g
+       id="g9821-71"
+       transform="translate(-8.9285643,610.7814)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         inkscape:connector-curvature="0"
+         id="path9299-1"
+         d="M 216.41262,147.36218 437.1269,166.6479"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend)" />
+      <text
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         sodipodi:linespacing="125%"
+         id="text9271-5-5"
+         y="148.65292"
+         x="325"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="148.65292"
+           x="325"
+           id="tspan9273-0-2"
+           sodipodi:role="line">risposta alla richiesta HTTP</tspan><tspan
+           y="168.65292"
+           x="325"
+           sodipodi:role="line"
+           id="tspan3343">HTTP/1.1 200 OK</tspan></text>
+    </g>
+    <g
+       id="g9293-5-2"
+       transform="translate(6.0714357,964.53248)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <g
+         id="g8545-3-0-16"
+         transform="translate(363.57143,-220.71429)">
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+           x="141.76059"
+           y="267.54187"
+           id="text8541-9-9-8"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8543-8-0-5"
+             x="141.76059"
+             y="267.54187">Accesso alla</tspan><tspan
+             sodipodi:role="line"
+             x="141.76059"
+             y="287.54187"
+             id="tspan9893-7">memoria</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45144343;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect8539-6-0-6"
+         width="137.14285"
+         height="42.188808"
+         x="436.42856"
+         y="30.55349"
+         ry="7.5218883" />
+    </g>
+    <g
+       id="g9293-5-6-1"
+       transform="translate(6.0714357,1285.1923)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <g
+         id="g8545-3-0-1-8"
+         transform="translate(363.57143,-220.71429)">
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+           x="141.50278"
+           y="276.97546"
+           id="text8541-9-9-3-9"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8543-8-0-8-2"
+             x="141.50278"
+             y="276.97546">Sleep</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45144343;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect8539-6-0-9-7"
+         width="137.14285"
+         height="42.188808"
+         x="436.42856"
+         y="30.55349"
+         ry="7.5218883" />
+    </g>
+    <g
+       id="g9598-1-7"
+       transform="translate(-6.0714243,951.59053)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:connector-curvature="0"
+         id="path8577-2-4"
+         d="M 438.57143,87.362182 222.14286,98.790753"
+         style="fill:none;stroke:#000000;stroke-width:0.99921262;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text9271-50-2"
+         y="88.076469"
+         x="339.28574"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="88.076469"
+           x="339.28574"
+           id="tspan9273-9-7"
+           sodipodi:role="line">invio dati</tspan><tspan
+           y="108.07647"
+           x="339.28574"
+           sodipodi:role="line"
+           id="tspan4292">GET /index.php?DATA=&lt;ID&gt;&lt;dati&gt;*</tspan></text>
+    </g>
+    <g
+       id="g8545-4-7"
+       transform="translate(-3.9285543,721.11557)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <rect
+         ry="7.5218883"
+         y="327.80673"
+         x="72.85714"
+         height="42.188808"
+         width="137.14285"
+         id="rect8539-7-9"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45144343;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text8541-8-3"
+         y="353.5144"
+         x="141.5145"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="353.5144"
+           x="141.5145"
+           id="tspan8543-3-1"
+           sodipodi:role="line">Salvataggio dati</tspan></text>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="145.76785"
+       y="595.80536"
+       id="text8541-9-4-0"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan8543-8-3-2"
+         x="145.76785"
+         y="595.80536">WEB SERVER</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="513.2915"
+       y="585.80536"
+       id="text8541-9-4-9-4"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan8543-8-3-8-8"
+         x="513.2915"
+         y="585.80536">DISPOSITIVO DI</tspan><tspan
+         sodipodi:role="line"
+         x="513.2915"
+         y="605.80536"
+         id="tspan10076-6">MISURA</tspan></text>
+    <g
+       id="g9821-9-0"
+       transform="translate(-11.428576,668.39523)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         inkscape:connector-curvature="0"
+         id="path9299-8-0"
+         d="M 216.41262,147.36218 437.1269,166.6479"
+         style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:6, 6;stroke-dashoffset:0;marker-end:url(#Arrow1Mend)" />
+      <text
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         sodipodi:linespacing="125%"
+         id="text9271-5-4-6"
+         y="145.79578"
+         x="325.71429"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="145.79578"
+           x="325.71429"
+           id="tspan9273-0-1-1"
+           sodipodi:role="line">messaggi configurazione</tspan></text>
+    </g>
+    <g
+       id="g9293-8-3"
+       transform="translate(6.0714357,782.85715)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <g
+         id="g8545-3-2-8"
+         transform="translate(363.57143,-220.71429)">
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+           x="141.327"
+           y="267.54187"
+           id="text8541-9-45-9"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8543-8-5-3"
+             x="141.327"
+             y="267.54187">elaborazione</tspan><tspan
+             sodipodi:role="line"
+             x="141.327"
+             y="287.54187"
+             id="tspan3408">messaggio</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45275591;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:5.81102362,5.81102362;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect8539-6-1-4"
+         width="137.14285"
+         height="42.188808"
+         x="436.42856"
+         y="30.55349"
+         ry="7.5218883" />
+    </g>
+    <g
+       id="g9821-71-0"
+       transform="translate(-4.2958902e-6,939.35247)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         inkscape:connector-curvature="0"
+         id="path9299-1-6"
+         d="M 216.41262,147.36218 437.1269,166.6479"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend)" />
+      <text
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         sodipodi:linespacing="125%"
+         id="text9271-5-5-6"
+         y="148.65292"
+         x="325"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="148.65292"
+           x="325"
+           id="tspan9273-0-2-1"
+           sodipodi:role="line">risposta alla richiesta HTTP</tspan><tspan
+           y="168.65292"
+           x="325"
+           sodipodi:role="line"
+           id="tspan3343-8">HTTP/1.1 200 OK</tspan></text>
+    </g>
+    <g
+       id="g9821-9-0-1"
+       transform="translate(-6.712352,1002.6338)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         inkscape:connector-curvature="0"
+         id="path9299-8-0-3"
+         d="M 216.41262,147.36218 437.1269,166.6479"
+         style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:6, 6;stroke-dashoffset:0;marker-end:url(#Arrow1Mend)" />
+      <text
+         inkscape:export-ydpi="99"
+         inkscape:export-xdpi="99"
+         inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\flusso dati - inizializzazione.png"
+         sodipodi:linespacing="125%"
+         id="text9271-5-4-6-5"
+         y="145.79578"
+         x="325.71429"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="145.79578"
+           x="325.71429"
+           id="tspan9273-0-1-1-9"
+           sodipodi:role="line">messaggi configurazione</tspan></text>
+    </g>
+    <g
+       id="g9293-8-3-8"
+       transform="translate(6.0714357,1117.0958)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <g
+         id="g8545-3-2-8-4"
+         transform="translate(363.57143,-220.71429)">
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+           x="141.327"
+           y="267.54187"
+           id="text8541-9-45-9-0"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8543-8-5-3-7"
+             x="141.327"
+             y="267.54187">elaborazione</tspan><tspan
+             sodipodi:role="line"
+             x="141.327"
+             y="287.54187"
+             id="tspan3408-6">messaggio</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45275593;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:5.81102362, 5.81102362;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect8539-6-1-4-3"
+         width="137.14285"
+         height="42.188808"
+         x="436.42856"
+         y="30.55349"
+         ry="7.5218883" />
+    </g>
+    <g
+       id="g9293-8-3-6"
+       transform="translate(6.0714357,853.23202)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <g
+         id="g8545-3-2-8-1"
+         transform="translate(363.57143,-220.71429)">
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+           x="141.327"
+           y="267.54187"
+           id="text8541-9-45-9-5"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             x="141.327"
+             y="267.54187"
+             id="tspan3408-2">risposta</tspan><tspan
+             sodipodi:role="line"
+             x="141.327"
+             y="287.54187"
+             id="tspan4446">alla richista</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45275593;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:5.81102362, 5.81102362;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect8539-6-1-4-0"
+         width="137.14285"
+         height="42.188808"
+         x="436.42856"
+         y="30.55349"
+         ry="7.5218883" />
+    </g>
+    <g
+       id="g9598-0-3"
+       transform="translate(-17.810342,839.50023)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:connector-curvature="0"
+         id="path8577-9-7"
+         d="M 438.57143,87.362182 222.14286,98.790753"
+         style="fill:none;stroke:#000000;stroke-width:0.99921262;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:5.99527574, 5.99527574;stroke-dashoffset:0;marker-end:url(#Arrow1Mend)" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text9271-4-2"
+         y="88.790756"
+         x="342.85715"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="88.790756"
+           x="342.85715"
+           id="tspan9273-8-6"
+           sodipodi:role="line">risposta</tspan><tspan
+           y="108.79076"
+           x="342.85715"
+           sodipodi:role="line"
+           id="tspan3341-0">GET /index.php?DATA=&lt;ID&gt;&lt;risp&gt;*</tspan></text>
+    </g>
+    <g
+       id="g9293-8-3-6-7"
+       transform="translate(6.4872285,1184.5391)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <g
+         id="g8545-3-2-8-1-5"
+         transform="translate(363.57143,-220.71429)">
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+           x="141.327"
+           y="267.54187"
+           id="text8541-9-45-9-5-4"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             x="141.327"
+             y="267.54187"
+             id="tspan3408-2-1">risposta</tspan><tspan
+             sodipodi:role="line"
+             x="141.327"
+             y="287.54187"
+             id="tspan4446-2">alla richista</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.45275593;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:5.81102362, 5.81102362;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect8539-6-1-4-0-0"
+         width="137.14285"
+         height="42.188808"
+         x="436.42856"
+         y="30.55349"
+         ry="7.5218883" />
+    </g>
+    <g
+       id="g9598-0-3-0"
+       transform="translate(-17.394539,1170.8073)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\flusso dati - invio dei dati.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <path
+         inkscape:connector-curvature="0"
+         id="path8577-9-7-1"
+         d="M 438.57143,87.362182 222.14286,98.790753"
+         style="fill:none;stroke:#000000;stroke-width:0.99921262;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:5.99527574, 5.99527574;stroke-dashoffset:0;marker-end:url(#Arrow1Mend)" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text9271-4-2-4"
+         y="88.790756"
+         x="342.85715"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+         xml:space="preserve"><tspan
+           y="88.790756"
+           x="342.85715"
+           id="tspan9273-8-6-6"
+           sodipodi:role="line">risposta</tspan><tspan
+           y="108.79076"
+           x="342.85715"
+           sodipodi:role="line"
+           id="tspan3341-0-0">GET /index.php?DATA=&lt;ID&gt;&lt;risp&gt;*</tspan></text>
+    </g>
+  </g>
+</svg>

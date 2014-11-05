@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   id="svg10078"
+   version="1.1"
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="struttura messaggio.svg"
+   inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+   inkscape:export-xdpi="99"
+   inkscape:export-ydpi="99">
+  <defs
+     id="defs3" />
+  <sodipodi:namedview
+     inkscape:document-units="mm"
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.98994949"
+     inkscape:cx="237.78795"
+     inkscape:cy="742.2061"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1366"
+     inkscape:window-height="706"
+     inkscape:window-x="1272"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata4">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="85.714287"
+       y="395.50394"
+       id="text10084"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan10086"
+         x="85.714287"
+         y="395.50394">ID</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="166.11929"
+       y="395.4798"
+       id="text10088"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan10090"
+         x="166.11929"
+         y="395.4798">TIPO MESSAGGIO</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="276.53848"
+       y="395.51172"
+       id="text10088-8"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan10090-0"
+         x="276.53848"
+         y="395.51172">TIPO DATO</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="389.96762"
+       y="395.51175"
+       id="text10088-8-8"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan10090-0-7"
+         x="389.96762"
+         y="395.51175">LUNGHEZZA DATO</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="486.23541"
+       y="395.48633"
+       id="text10088-8-7"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan10090-0-8"
+         x="486.23541"
+         y="395.48633">DATO</tspan></text>
+    <rect
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:0.99921262;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect10143"
+       width="26.071428"
+       height="21.071428"
+       x="72.518417"
+       y="380.39792"
+       ry="0"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+    <rect
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:0.9992126;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect10143-7"
+       width="134.51878"
+       height="21.071428"
+       x="98.617706"
+       y="380.36597"
+       ry="0"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+    <rect
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:0.9992126;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect10143-1"
+       width="86.164017"
+       height="21.071428"
+       x="233.21429"
+       y="380.39789"
+       ry="0"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+    <rect
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:0.9992126;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect10143-0"
+       width="140.69749"
+       height="21.071428"
+       x="319.41965"
+       y="380.39792"
+       ry="0"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+    <rect
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:1.40934765;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect10143-73"
+       width="51.866299"
+       height="21.071428"
+       x="460.10306"
+       y="380.3725"
+       ry="0"
+       inkscape:export-filename="J:\progetto_monitoraggio_beni_culturali\Specifica tecnica\Risorse\struttura messaggio.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+  </g>
+</svg>

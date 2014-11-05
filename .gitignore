@@ -1,0 +1,8 @@
+build/
+dist/
+doc/html/
+doc/latex/
+nbproject/
+funclist
+l.obj
+Makefile

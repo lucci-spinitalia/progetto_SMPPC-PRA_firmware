@@ -1,0 +1,59 @@
+----- Configurazione per connettersi automaticamente ad un host ogni intervallo di tempo e disconnettersi
+      quando non c'è più attività
+
+# Imposta l'indirizzo dell'host a cui connettersi automaticamente all'accensione o al wakeup
+set ip host 192.168.178.71
+set ip remote 2000
+
+# configura il tempo di connessione
+set sys auto 10
+
+# configura la disconnessione automatica dopo 3 secondi di inattività
+set comm idle 3
+
+# salva le impostazioni
+save
+
+# è necessario un riavvio
+reboot
+
+----- Configurazione per sleep e wake up comandato
+set sys sleep 15
+set sys wake 5
+
+----- Impostazione del tempo dal server ntp
+# ATTENZIONE!! Impostando 'set time enable 1' la funzionalità web_Server non funziona come deve,
+# buttandoti fuori appena dopo esserti connesso
+
+set time a 193.204.114.105
+set time port 123
+set time zone 22
+ 
+save
+reboot
+
+----- Impostazione di una connessione telenet
+set ip proto 2
+save
+reboot
+
+---- Inviare dati ad un webserver quando viene ricevuto qualcosa dalla uart. Il trigger è impostato sul CTS
+set ip prot 18
+set dns name www.webserver.com
+set ip host 0
+set ip remote 80
+set com remote GET$/index.php?DATA=
+set uart mode 2
+set comm time 100
+set sys trigger 2
+
+#è possibile impostare il pin rx come trigger, però in questo modo si potrebbe perdere il primo byte
+set sys trigger 1
+
+# configura la disconnessione automatica dopo 3 secondi di inattività. 
+# Attenzione!! Impostando questo comando, se si prova ad attivare l'AP la connessione scadrà
+# ed il modulo passerà in modalità normale
+
+set comm idle 20
+
+set option format 1

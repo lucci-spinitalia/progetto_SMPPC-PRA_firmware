@@ -1,0 +1,499 @@
+﻿/** \mainpage Manuale utente
+ *
+ * \section intro_sec Introduzione
+ *
+ * Il progetto 'SMPPC-PRA', acronimo per Sistema di Monitoraggio per la Prevenzione del Patrimonio Culturale e la Prevenzione dei Rischi Ambientali, nasce con l'obiettivo di misurare
+ * e sintetizzare in indicatori facilmente interpretabili lo stato di salute di un edificio o di una sua parte.
+ *
+ *
+ * I punti salienti del sistema sono:
+ * - misura di micromovimenti e deformazione attorno alle crepe
+ * - monitoraggio costante per periodi nell'ordine dei mesi
+ * - connessione wireless
+ * - alimentazione a batterie
+ * - montaggio senza la necessità di ponti ed in modalità reversibili
+ * - raccolta di dati su un web server e distribuzione degli stessi in tempo reale
+ * 
+ * 
+ * Il firmware qui presentato usa come piattaforma base un PIC18F e svolge le seguenti funzioni:
+ * - acquisizione del segnale analogico proveniente dal sensore esterno
+ * - memorizzazione dei dati su eeprom interna
+ * - invio temporizzato dei dati raccolti tramite la porta seriale
+ * 
+ * In particolare, il firmware è stato scritto per funzionare con il modulo Wifi RN131 della Microchip. Questo comporta lo scambio di messaggi standard tra il microcontrollore
+ * ed il modulo Wifi.
+ *
+ *
+ * \section principle_of_function_sec Principio di funzionamento
+ *
+ * Il modulo wifly è un sistema di acquisizione wireless per il monitoraggio a lungo termine di strutture edili. Al suo interno presenta un processore RISC a bassissimo consumo 
+ * che acquisisce i dati dai sensori esterni e li immagazzina nella memoria interna. Grazie al suo sistema di acquisizione analogico/digitale a 10 bit, è facilmente interfacciabile con
+ * una vasta gamma di sensori presenti sul mercato, rendendo possibile il monitoraggio contemporaneo di diverse grandezze. La batteria al litio interna lo rende avulso da qualsiasi 
+ * collegamento fisico, oltre che completamente indipendente per lunghi periodi di tempo (dipendenti dal periodo di acquisizione preimpostato).
+ * Configurare questo modulo di acquisizione è estremamente semplice ed intuitivo: infatti può creare una propria rete wifi a cui è possibile collegarcisi con qualsiasi dispositivo e la modifica 
+ * delle impostazioni interne avviene tramite una pagina web visualizzabile con qualsiasi browser.
+ *
+ * Il dispositivo si presenta come una scatola a cui va collegato il trasduttore compreso del relativo circuito di condizionamento. L'applicazione tipica per
+ * cui viene utilizzato è il monitoraggio di fessure in strutture edili, quindi deve essere installato nelle vicinanze della parte in esame.
+ *
+ * \image html "schema principio dispositivo misura.png" "installazione standard"
+ *
+ * Nella precedente immagine viene mostrato uno schema generico di un'installazione tipica, dove è possibile distinguere il dispositivo di misura e trasmissione dati 
+ * (dispositivo di misura wireless), il trasduttore a cavallo della fessura da monitorare ed il materiale d'incollaggio alla superficie di supporto. 
+ * Quest'ultimo può cambiare sensibilmente a seconda del tipo di superfice su cui viene applicato il dispositivo, sia per il materiale usato che per la tecnica di fissaggio.
+ * 
+ * Una volta che il dispositivo di monitoraggio viene attivato, si collega automaticamente all'access point impostato in una prima fase di configurazione, ottenendo 
+ * l'indirizzo ip tramite il server DHCP predefinito. In questo modo è possibile collegare più moduli nella stessa area, senza preoccuparsi di creare conflitti sulla rete. Appena 
+ * viene campionato un sensore, il dato viene spedito al server centrale, come mostrato nel seguente schema architetturale esemplificativo.
+ *
+ * \image html "schema architetturale.png" "schema architetturale"
+ *
+ * I tempi di campionamento e di invio dei dati sono configurabili dall'operatore attraverso degli appositi messaggi, in modo che il dispositivo risulti flessibile
+ * di fronte ai vari scenari operativi ed alle esigenze contingenti. E' quindi possibile eseguire sia dei monitoraggi statici a lunga durata, dove il tempo di campionamento è
+ * nell'ordine delle ore, che monitoraggi dinamici con tempi di campionamento nell'ordine delle centinaia di millisecondi.
+ *
+ * Le sue caratteristiche salienti sono riassunte di seguito:
+ *  - modulo a bassissimo consumo;
+ *  - memoria interna da 8 Mb;
+ *  - batteria al litio interna ricarciabile;
+ *  - configurazione semplificata tramite pagina web;
+ *  - connessione automatica ad una rete wifi predefinita;
+ *  - possibilità di impostare i tempi di acquisizione e di invio dei dati tramite connessione TCP/IP;
+ *  - disponibili kit di ancoraggio per diverse superfici;
+ *  - convertitore A/D da 10 bit.
+ *
+ * \subsection internal_block_sec Schema architetturale del modulo di  monitoraggio
+ * Il dispositivo di acquisizione può essere suddiviso logicamente in due parti:
+ *   - modulo wifi;
+ *   - modulo acquisizione e controllo.
+ * 
+ * \image html "schema logico dispositivo di misura.png" "schema a blocchi interno suddiviso in modulo wifi (in giallo) e modulo acquisizione e controllo (in verde)"
+ *
+ * Il modulo "wifi" ha il compito di inoltrare i messaggi che arrivano dal modulo "acquisizione e controllo" verso l'host predefinito. Questo sottoinsieme può essere a sua volta
+ * suddiviso in altri tre blocchi principali:
+ *
+ *  - interfaccia wifi: l'interfaccia fisica che si occupa di ricevere e spedire i messaggi sulla rete;
+ *  - ID univoco: rappresentato dal MAC address del dispositivo, ha il compito di rendere univoco il modulo wifi;
+ *  - temporizzatore abilitazione wifi: un timer impostato in fase di configuarazione che ha il compito di svegliare in modo temporizzato il modulo wifi.
+ *
+ * Il modulo "acquisizione e controllo" rappresenta il punto nevralgico del sistema ed è la parte che si occupa di acquisire e immagazzinare i dati dai sensori, oltre a gestire i tempi
+ * di trasmissione. Anch'esso può essere suddiviso in ulteriori blocchi funzionali:
+ * 
+ *  - circuito di acquisizione: contiene al suo interno il modulo di conversione A/D che ha il compito di acquisire i dati dai sensori;
+ *  - temporizzatore acquisizione: timer che gestisce il periodo di acquisizione del convertitore A/D. Può essere impostato nella fase di configurazione preliminare del dispositivo
+ *     e determina il numero di campioni per ora;
+ *  - gestore della memoria: gestisce le modalità ed i tempi di lettura/scrittura nella memoria e garantisce l'integrità dei dati;
+ *  - memoria: supporto fisico dove vengono memorizzati i dati campionati.
+ *
+ * Dopo una prima fase di configurazione interna, il modulo "wifi" si pone in stand-by ed il modulo "acquisizione e controllo" comincia ad acquisire i dati dai sensori. Il temporizzatore
+ * per l'acquisizione scandisce gli intervalli di campionamento ed il gestore della memoria si occupa di memorizzare i dati in celle di memoria consecutive. Nel momento in cui il
+ * temporizzatore abilitazione wifi attiva l'interfaccia, il modulo "acquisizione e controllo" blocca il campionamento e, nel caso in cui sia presente una connessione valida all'host
+ * predefinito, il gestore della memoria comincia ad inviare i nuovi dati acquisiti, passandoli all'interfaccia wifi. Conclusa l'operazione, il modulo "wifi" viene messo di nuovo in stand-by
+ * e ricomincia l'acquisizione dai sensori.
+ *
+ * \subsection host_comm_sec La comunicazione con l'host
+ *
+ * Il modulo di acquisizione comunica con l’host attraverso il protocollo http integrato nell’interfaccia wi-fi. Lo scambio dei messaggi avviene con una richiesta GET inviata 
+ * dal modulo wi-fi, il quale passa i dati tramite il parametro “DATA”.
+ *
+ * <center> \e GET /index.php?DATA=<messaggio>*</center>
+ *
+ * La comunicazione viene instaurata quando:
+ *  - ci sono dei dati acquisiti pronti per essere inviati;
+ *  - si deve inviare la configurazione corrente a seguito della ricezione della relativa richiesta.
+ *
+ * Nel momento in cui il modulo si sveglia, subito prima di scaricare i dati dalla eeprom, controlla la presenza di un server http attivo sull’host con< l’invio di una richiesta GET 
+ * contenente solo l’ID della scheda ed il carattere di fine messaggio. La risposta che segue può contenere dei messaggi di configurazione che il modulo di acquisizione interpreta 
+ * ed esegue. Se non vi è stata nessuna risposta entro il tempo “data_delay” (vedi \link get_config_sec Messaggio get_config \endlink), oppure se il messaggio di configurazione manda il modulo in uno stato diverso dal normale, 
+ * non verranno inviate le acquisizioni memorizzate.
+ *
+ *  \image html "flusso dati - invio dei dati.png" "Flusso messaggi tra dispositivo di acquisizione e web server"
+ *
+ * \subsection message_format_sec Formato dei messaggi di acquisizione
+ * I messaggi inviati dal modulo di acquisizione hanno il seguente formato:
+ *
+ * <center>  
+ *         MAC     |  Data ed ora  |   Categoria   | Stato interno | Valore sensore |  Fine frame
+ *   --------------|---------------|---------------|---------------|----------------|-----------------
+ *   (17 caratteri)| (8 caratteri) | (2 caratteri) | (2 caratteri) | (4 caratteri)  | (1 carattere)
+ *  </center>
+ *
+ * dove:
+ *  - MAC: è l'indirizzo MAC del dispositivo wifi;
+ *  - Data ed ora: rappresenta l'ora UTC di quando è stato memorizzato il dato proveniente dal sensore in formato UNIX (numero di secondi trascorsi dal 1 Gennaio 1970);
+ *  - Categoria: rappresenta il tipo di sensore acquisito;
+ *  - Stato interno: informazione sullo stato del modulo di acquisizione;
+ *  - Valore sensore: dato acquisito dal sensore con rappresentazione esadecimale in formato ASCII;
+ *  - Fine frame: carattere di fine frame.
+ *
+ * \subsection configuration_messages_sec Messaggi di configurazione
+ * Il modulo di acquisizione accetta dei messaggi di configurazione in risposta ad una qualsiasi richiesta http inoltrata all’host. I comandi in questione possono essere 
+ * spediti contemporaneamente e devono sempre essere delimitati dal carattere \\r (carriege return). Nel caso fosse prevista una risposta da parte del modulo di acquisizione, 
+ * il messaggio inviato inizierà con la sequenza “<mac>x:”.
+ *
+ * Di seguito vegono elencati i messaggi validi:
+ *
+ *
+ * <center>  
+ *      Messaggio         |  Descrizione                                                                           | Default 
+ *   :-------------------:|:---------------------------------------------------------------------------------------|:--------:
+ *     web_server         | Avvia il web server del modulo rn131                                                   | -
+ *     get_config         | Ottiene la configurazione corrente del modulo di acquisizione                          | -
+ *     get_batt           | Ottiene il livello di batteria in Volt                                                 | -
+ *     set_config         | Salva le impostazioni nella memeoria interna                                           | -
+ *     set_sleep=xx       | Imposta il tempo di sleep del dispositivo in secondi                                   | 60
+ *     set_category=xx    | Imposta la categoria del dato                                                          | 0
+ *     set_adc=xx         | Imposta il tempo di campionamento a "xx" centesimi di secondo                          | 1000 hs
+ *     set_data_delay=xx  | Imposta il tempo di attesa da quando si è connesso all'host a quando invia i dati      | 1000 hs
+ *     set_batt_warn=x.xx | Livello batteria quasi scarica                                                         | 3.2 V
+ *     set_batt_min=x.xx  | Livello batteria scarica                                                               | 3.0 V
+ *
+ *  </center>
+ *
+ * \subsubsection web_server_sec Messaggio web_server
+ * Il modulo wifi interno implementa un web server che consente di configurarne i parametri. Questa funzionalità risulta particolarmente utile in quanto viene creata una rete apposita
+ * a cui ci si può collegare. Accedendo poi alla pagina <a href="http://192.168.1.1/web_config.html">http://192.168.1.1/web_config.html</a> è possibile selezionare la rete di default a cui il modulo si collega ed accedere al 
+ * terminale per cambiare i parametri non implementati nei messaggi di configurazione.
+ *
+ * \subsubsection get_config_sec Messaggio get_config
+ * Tramite questo comando si ottiene attraverso una richiesta GET i parametri attuali di configurazione, separati da una ",".
+ *
+ * <center> 
+ *
+ *  Parametri       | Descrizione
+ * :---------------:|:-------------
+ *  adc=xxx         | Tempo di campionamento in centesimi di secondo
+ *  category=xx     | Categoria del dato
+ *  data_delay=xx   | Tempo di attesa da quando ci si connette all'host a quando si spediscono i dati letti dall'eeprom
+ *  batt_warn=x.xx  | Livello sotto il quale la batteria è considerata quasi scarica e viene impostato il rispettivo flag nella sezione "Stato interno" del messaggio inviato all'host
+ *  batt_min=x.xx   | Livello sotto il quale la batteria è considerata scarica, vengono salvete le variabili attuali ed i micro spegne il modulo wifi mettendosi in sleep
+ *  
+ *  </center>
+ *
+ * \subsubsection get_batt_sec Messaggio get_batt
+ * Si ottiene il livello attuale della batteria attraverso una richiesta GET avente come parametro "batt" delimitato da ",". Il dato ricevuto è una stringa ascii
+ * nel formato x.xx rappresentante il livello di tensione in V.
+ *
+ * \subsubsection get_batt_sec Messaggio set_sleep
+ * Imposta il tempo di sleep del dispositivo wifi in secondi.
+ *
+ * \subsubsection set_cat_sec Messaggio set_category
+ * Imposta la categoria del dato. Il parametro passato deve essere uno dei seguenti:
+ * 
+ *  <center> 
+ *
+ *  Parametri       | Descrizione                 | Conversione
+ * :---------------:|:---------------------------:|:-------------:
+ *  1               | Temperatura                 | \f$ \frac {value - 0,424} {0,00625} \f$
+ *  2               | Trasformatore differenziale | -
+ *
+ *  </center>
+ *
+ *  Il dato passato è un intero rappresentante il valore esadecimale letto direttamente dal convertitore, in formato ascii. Per ottenere il dato nell'unità di misura corretta è necessario
+ * eseguire delle operazioni dipendenti dalla categoria.
+ *
+ *
+ * \subsubsection set_config_sec Messaggio set_config
+ * Salva le impostazioni correnti nella memoria interna. Queste saranno ricaricate ad ogni prima accensione del dispositivo.
+ *
+ * \subsubsection set_adc_sec Messaggio set_adc
+ * Imposta il periodo tra un campionamento e l'altro. Questo valore, per avere senso, dovrebbe essere minore del tempo in cui il dispositivo wireless rimane in sleep, così che al suo 
+ * risveglio avrà dei dati da inviare.
+ *
+ * \subsubsection set_data_delay_sec Messaggio set_data_delay
+ * Questo messaggio configura il tempo di attesa da quando il modulo di acquisizione si è connesso all'host a quando invia i dati letti dalla eeprom. Essenzialmente con questo metodo
+ * si crea una finestra in cui è possibile ricevere la risposta dell'host ed eseguire eventuali richieste incorporate in essa. E' quindi essenziale impostare sempre questo parametro
+ * ad un valore congruo, che consenta di ricevere i messaggi di configurazione.
+ *
+ * \subsubsection set_batt_warn Messaggio set_batt_warn
+ * Imposta il livello sotto il quale la batteria è considerata quasi scarica. Quando questa condizione è soddisfatta, il modulo imposta il flag di stato interno di "batteria quasi scarica"
+ * per avvisare l'host.
+ *
+ * \attention Il valore passato deve avere come separatore decimale il punto ".".
+ *
+ * \subsubsection set_batt_min Messaggio set_batt_min
+ * Imposta il livello sotto il quale la batteria è considerata scarica. Quando questa condizione è soddisfatta, il modulo salve le variabili locali nella memoria interna, spegne il modulo
+ * wifly e si mette in modalità sleep fino a che il sistema viene riavviato spegnendo e riaccendendo l'alimentazione. Questa è una condizione di emergenza che consente di ottenere i 
+ * dati salvati, ma non spediti, al prossimo riavvio, oltre a salvare la batteria.
+ *
+ * \attention Il valore passato deve avere come separatore decimale il punto ".".
+ *
+ *
+ * \section code_guide_sec Guida al codice
+ *
+ * \subsection requisite_sec Requisiti minimi
+ * L'operazione più gravosa per il microcontrollore è la contemporanea lettura dalla seriale e l'interpretazione dei messaggi. Per non perdere i caratteri in
+ * ricezione, la frequenza di lavoro, che va ad incidere sulla frequenza di aggiornamento del buffer circolare, non deve essere inferiore a 16 MHz.
+ *
+ * Riassumendo, i requisiti minimi per la corretta funzionalità del codice sono:
+ *
+ *   - Frequenza minima: 16 MHz
+ *   - Memoria programmazione minima: 32 Kb
+ *   - Memoria ram minima: 2 Kb
+ *   - Periferiche:
+ *     - 1 seriale per la comunicazione con il modulo wifi
+ *     - 1 spi per la comunicazione con la eeprom
+ *     - 1 timer con funzionalità RTC
+ *     - 3 canali di acquisizione AD
+ *
+ *
+ * \subsection wait_ready_subsec Ricezione della stringa di inizializzazione
+ *
+ * All'avvio si attende la ricezione della stringa di inizializzazione
+ * <center> \e wifly-GSX Ver: . . . </center>
+ * da cui si ricavano le seguenti informazioni:
+ * - versione
+ * - mac address
+ *
+ * e vengono aggiornate le variabili nella struttura rn131, per la precisione ::rn131_struct.version, ::rn131_struct.mac ed ::rn131_struct.ready.
+ * In questa fase il dispositivo wifi è inizializzato e pronto per ricevere dati, ma non è ancora connesso.
+ *
+ * \attention Ogni volta che viene ricevuta la stringa di inizializzazione, tutte le variabili della struttura rn131 vengono resettate ai valori di default, tranne il parametro
+ * time_set
+ *
+ * \subsection get_time_subsect Aggiornamento dell'ora di sistema
+ * Una volta che è stata ricevuta la stringa di inizializzazione, si resta in attesa della stringa di avvenuta connessione, in cui sono presenti l'indirizzo ip del modulo, la submask
+ * e l'indirizzo del gateway. Proprio quest'ultima informazione determina la fine della stringa e viene utilizzata per abilitare il flag ::rn131_struct.connected.
+ * Tutto questo viene svolto tramite la funzione ::rn131_connection_init.
+ *
+ * A questo punto viene avviata la richiesta di aggiornamento dell'ora che consiste in:
+ *  -# accesso alla modalità comandi tramite ::rn131_command_enter
+ *  -# invio richiesta di aggiornamento dell'ora con ::rn131_command_show_time
+ *  -# riavvio del modulo rn131 con conseguente uscita dalla modalità comandi
+ *
+ * \bug Il modulo rn131, quando viene aggiornata l'ora, non entra più modalità configurazione. Sembra che, dopo essere entrato in modalità access point, faccia scadere
+ *  subito il tentativo di connessione, buttando fuori il client. Per questo, una volta ottenuta l'ora e memorizzata nella variabile interna, è necessario riavviare il modulo
+ *  per azzerare l'orario interno.
+ * 
+ * Se i punti precedenti vengono eseguiti con successo, verrà impostata la variabile ::rn131_struct.time_set che indica la corretta inizializzazione dell'ora.
+ * 
+ * \attention L'ora viene aggiornata una sola volta durante tutto il programma ed è mantenuta dal modulo rtc presente sulla scheda. Questo vuol dire che, nel caso venisse ricevuta
+ *  un altro messaggio di inizializzazione, non verrà eseguito un nuovo aggiornamento dal server ntp.
+ *
+ * \subsection normal_operation_subsect Funzionamento normale
+ *
+ * Una volta conclusa l'inizializzazione si entra nella modalità normale in cui il microcontrollore campiona il sensore ad intervalli regolari, memorizza i dati nella eeprom ed
+ * entra in modalità sleep.
+ * Il modulo rn131 sveglia il microcontrollore in modo temporizzato per scaricare in remoto i dati memorizzati sull'eeprom interna. Il metodo utilizzato consiste nel collegare il pin
+ * RTS del modulo rn131 al pin INT1 del microcontrollore, abilitando l'interrupt su quest'ultimo. Al risveglio del modulo wifi il pin RTS viene prima portato alto e, una volta che
+ * la logica interna è stata inizializzata, viene posto di nuovo basso per indicare che può ricevere messaggi. Il microcontrollore si attiva al passaggio basso-alto ed abilita il flag
+ * communication_ready al passaggio opposto. Questo consente di determinare con esattazza il momento in cui il modulo rn131 è pronto ad operare.
+ *
+ * Prima di inviare i dati richiesti, si attende comunque che il flag ::rn131_struct.connected, azzerato dal passaggio basso-alto del pin RTS e dalla ricezione della stringa di inizializzazione,
+ * torni al livello alto.
+ *
+ * Una volta che tutti i dati sono stati inviati al server remoto, il microcontrollore torna in modalità sleep; farà lo stesso il modulo rn131 allo scadere del tempo di inattività 
+ * impostato internamente.
+ *
+ * 
+ * 
+ * \subsection eeprom_subsect Salvataggio dei dati sull'eeprom esterna
+ * 
+ * Appena viene raccolto un dato dall'adc, viene memorizzato sulla eeprom esterna. In particolare, l'array da memorizzato sarà formato da
+ *
+ * <center>
+ *   Descrizione       | Tipo  | Dimensione (byte)
+ *   ------------------|-------|------------------
+ *   Data ed ora       | long  | 4
+ *   Categoria dato    | char  | 1
+ *   Stato interno     | char  | 1
+ *   Valore campionato | int   | 2
+ * </center>  
+ *
+ * I dati sono scritti in modo sequenziale, fino al raggiungimento della fine della memoria. In quest'ultimo caso, si ricomincerà a memorizzare dalla prima locazione. 
+ * Appena è disponibile una connessione, il microcontrollore invierà i nuovi dati raccolti tramite il modulo rn131.
+ *
+ * \attention Una volta che i dati sono stati spediti, non verranno sovrascritti, ma si continuerà a scrivere nelle celle consecutive. L'unica possibilità di sovrascrittura avviene
+ * quando è finita la memoria disponibile e, quindi, si rinizia dalla locazione 0.
+ *
+ * Per tenere traccia dei nuovi dati da inviare e della nuova locazione di memoria su cui scrivere, sono utilizzati due puntatori: uno che detiene l'ultimo indirizzo che è stato scritto
+ * e l'altro l'indirizzo dell'ultima locazione di memoria inviata. Queste due variabili vengono salvate nella eeprom del microcontrollore appena l'alimentazione primaria raggiunge
+ * una soglia minima, ovvero quando la batteria si sta per scaricare. Al riavvio del firmware, il microcontrollore si occuperà di leggere i puntatori dalla sua memoria ed aggiornare 
+ * le varialibili locali. Una volta spediti i dati della sessione precedente, varrà azzerata la eeprom.
+ *
+ * Visto che non è possibile scrivere su una locazione non precedentemente cancellata e che tale operazione può essere fatta solo sulle sezioni (cioè blocci da 4Kb), all'inizio di ogni
+ * nuova sezione verranno cancellati i corrispondenti byte. Questa caratteristica deve essere presa in considerazione nel caso in cui il puntatore si ravvolga all'inizio del blocco di
+ * memoria.
+ *
+ * \subsection send_data_subsect L'invio dei dati
+ * L'invio dei dati prevede la lettura di quelli aggiornati nella eeprom ed il successivo inoltro tramite una connessione tcp. Questo implica che il dispositivo rn131
+ * sia connesso e che dall'altra parte ci sia un server tcp in ascolto sulla porta prestabilita. Questa condizione viene verificata attraverso il polling della funzione
+ * ::rn131_tcp_connection, che a sua volta fa partire un timer con scadenza pari a timeout_data_eeprom_hs. Il suddetto contatore serve per consentire di ricevere un'eventuale
+ * risposta di mancata connessione da parte del client. Una volta scaduto il tempo previsto senza ricevere errori, allora è possibile leggere dalla eeprom i nuovi dati 
+ * campionati. Il messaggio passato all'host è formato da caratteri di tipo ascii: anche i byte contenuti nella struttura ::sample_union sono convertiti nei corrispondenti
+ * valori ascii, sempre composti da due caratteri.
+ *
+ * Per esempio, se nell'array sample_union.sample_array è memorizzato:
+ *
+ * \code
+ *  0xb3 0x00 0x20 0x54 0x01 0x00 0x98 0x03
+ * \endcode
+ *
+ * il messaggio inviato sarà:
+ * \code
+ * b300205401009803
+ * \endcode
+ *
+ * Oltre al messaggio contentuto nell'eeprom, vengono aggiunte delle informazioni aggiuntive:
+ *   - l'indirizzo MAC del dispositivo che trasmette il dato
+ *   - un carattere di fine messaggio "*", necessario per far capire al modulo rn131 che può inviare i dati immessi nel suo buffer
+ *
+ * Il messaggio ascii inviato dal modulo rn131 sarà così formato:
+ *
+ * <center>  
+ *         MAC     |  Data ed ora  |   Categoria   | Stato interno | Valore sensore |  Fine frame
+ *   --------------|---------------|---------------|---------------|----------------|-----------------
+ *   (17 caratteri)| (8 caratteri) | (2 caratteri) | (2 caratteri) | (4 caratteri)  | (1 carattere)
+ *  </center>
+ *
+ * \attention L'indirizzo MAC ed il carattere di fine frame vengono inviati una sola volta a frame. Tra questi due campi possono esserci più campioni temporali, tutti
+ * della lunghezza di 16 caratteri.
+ * 
+ * \attention I campi provenienti direttamente dall'eeprom (sample_union.date, sample_union.category, sample_union.adc_value_bytes) sono memorizzati in notazione Little-Endian.
+ * Questo significa che l'ordine dei byte è invertito, con quello meno significativo posto a sinistra. Dovrà essere cura del server occuparsi di convertire i valori in
+ * Big-Endian, nel caso fosse necessario.
+ *
+ * \attention Sebbene il messaggio GET inviato dal client HTTP non abbia da specifica un limite di lunghezza, in pratica i server a cui si collegano ce l'hanno e dipendono
+ * dal manutentore. Il limite più basso è di 2000 caratteri, oltre il quale l'indirizzo può essere tagliato in modo indiscriminato. I messaggi inviati dal modulo di acquisizione
+ * non supereranno mai il limite del buffer di trasmissione della uart, impostato tramite la costante UART2_BUFFER_SIZE_TX.
+ *
+ *
+ * \subsection emergency_stop_sec Spegnimento automatico di emergenza
+ * In alcune condizioni non è più possibile campionare i dati in modo affidabile: in questi casi il microcontrollore memorizza i riferimenti del buffer circolare della eeprom nella
+ * memoria interna ed esce dal programma.
+ *
+ * \attention i riferimenti del buffer circolare vengono memorizzati nel program memory perchè la versione del micro utilizzato non ha una eeprom interna.
+ *
+ * Nella versione corrente, la condizione di autospegnimento è dettata dalla tensione della batteria: se si trova sotto il valore BATTERY_MIN_VALUE viene avviata la procedura di emergenza.
+ * Quando il microcontrollore viene riavviato, i valori salvati vengono caricati automaticamente, così da non utilizzare sempre lo stesso settore di memoria per il salvataggio dei dati
+ * campionati.
+ *
+ * \subsection temp_subsect Temporizzazione
+ *
+ *
+ * \subsection status_strauctur_sec Lo stato interno del sistema
+ * Il modulo di acquisizione tiene traccia dello stato del sistema, ed in particolare di eventuali errori, tramite la struttura status_flags_struct. Ogni flag elencato nell'unione
+ * rappresenta un tipo diverso di errore. Questa struttura formata da 1 byte viene inserita in ogni messaggio nel campo "Stato interno". Dovrà essere cura dell'utente prendere gli
+ * accorgimenti del caso a seconda del problema segnalato.
+ *
+ * 
+ * \subsection temp_adc_sec Il sensore di temperatura
+ * Il modulo di acquisizione integra al suo interno un sensore di temperatura della Microchip TC1046. Questo viene campionato ad intervalli regolari determinati dalla variabile 
+ * timeout_update_adc_temp_hs.
+ * Il range di temperatura del sensore va da -40 fino a +125 ed ha un'accuratezza tipica di +-0.5°C. Sapendo che il coefficiente di conversione è di 6,25 mV/°C e
+ * che il sensore misura 0.580 mV a 25 °C, significa che l'errore relativo in temperatura a tale temperatura è di:
+ *
+ * \f[ T_{err_sens} {=} 6,25 \times 0,5 {=} 3,125 mV \f]
+ * \f[ {e_t {=} \frac {T_{err sens}} {V_{temp @ 25°C}} {=} \frac {3,125} {580} {=} 0,54\%} \f]
+ *
+ * Visto che l'adc utilizzato è da 10 bit con un errore di +-0,5 LSB, che corrisponde ad un errore relativo di:
+ *
+ *  \f[ LSB {=} \frac {V_{ref}} {2^{10}} {=} \frac {2,5} {1024} {=} 2,44 mV \f]
+ *
+ *  \f[ e_{adc} {=} \frac {\frac {LSB} {2}} {V_{25°C}} {=} \frac {1,22} {580} {=} 0,21\% \f]
+ *
+ * Quindi, l'errore relativo commesso sarà di:
+ *
+ * \f[ e_{rel} {=} e_t + e_{adc} {=} 0,54 + 0,21 {=} 0.75\% \f]
+ *
+ * L'errore assoluto commesso sarà di:
+ *
+ * \f[ e_{ass} {=} V_{25{°}C} \times e_{rel} {=} 0,580 \times 0,0075 {=} 4,35 mV \f]
+ *
+ * L'errore in temperatura sarà pari a:
+ *
+ * \f[ T_{err} {=} e_{ass} \times C_{temp} {=} \frac {4,35} {6,25} {=} +-0,7 °C @ 25 {°}C \f]
+ *
+ * \subsubsection temp_adc_amp_sec Aumento della sensibilità
+ * Nella configurazione diretta sensore-adc, oltre ad avere un errore in temperatura peggiorato, si ha anche una risoluzione di soli:
+ *
+ * \f[ T_{res} {=} \frac {LSB} {6,25} {=} 0,39 °C \f]
+ *
+ * Per ovviare a quest'ultimo problema è stato introdotto un amplificatore operazionale in configurazione non-invertente con guadagno pari a 3,13. Sebbene l'errore
+ * commesso non varii, la risoluzione aumenterà fino a:
+ *
+ * \f[ T_{res} {=} \frac {LSB} {6,25 \times G_{amp}} {=} 0,12 °C \f]
+ *
+ * a scapito della massima temperatura misurabile, che sarà di:
+ *
+ * \f[ T_{max} = \frac {{\frac {V_{ref mV}} {G_amp}} - 424} {6,25} = 65,5 °C \f]
+ *
+ * \section lcd_sec Abilitare il display
+ * 
+ * \attention Questa sezione è valida solo se si utilizza la scheda DACS2-EL-002-02 che supporta anche il display.
+ *
+ * E' possibile avvelersi del diplay integrato sulla scheda DACS2-EL-002-02 per visualizzare dei messaggi di debug; basta decommentare la definizione LCD_WINSTAR.
+ *
+ * Il dispaly LCD usa una variabile d'appoggio chiamata lcd_update, che determina quando può essere aggiornato. La suddetta variabile viene impostata allo scadere del
+ * tempo TIMEOUT_UPDATE_LCD_HS nella routine d'interrupt del timer1.
+ *
+ * I messaggi standard visualizzati ad ogni update dipendono dallo stato del modulo rn131 e da quello della uart2.
+ * 
+ * Se c'è stato un errore della uart si vedrà:
+ *   - !Overflow!!: buffer overflow della uart hardware oppure buffer circolare pieno
+ *   - Frame Error!: errore dell'ultimo frame ricevuto e scartato
+ *
+ * Altrimenti verranno visualizzati i messaggi:
+ *  - Searching. . .: non è stato ricevuto nessun messaggio *READY* dal modulo rn131
+ *  - Connecting. . .: il modulo rn131 è pronto a ricevere dati, ma non è ancora connesso alla rete
+ *  - Getting time. . .: il modulo rn131 è pronto e connesso alla rete, ma il firmware deve ancora ottenre l'ora dal server ntp
+ *  - \<data ed ora\>: il modulo rn131 è pronto, connesso ed il firmware ha ottenuto l'ora dal server
+ *
+ * Per questioni di risparmio energetico, il firmware va nella modalità sleep appena ha inviato tutti i dati al modulo rn131. L'unica finestra in cui è possibile aggiornare il display
+ * si trova nel momento in cui viene aggiornato il valore dell'adc dopo un'acquisizione e quando vengono inviate le informazioni tramite wifi. Infatti il programma esce dalla
+ * routine d'interrupt solo in questi istanti temporali. Questo comporta che l'ora visualizzata avrà degli sbalzi corrispondenti al tempo di campionamento dell'adc e mostrerà 
+ * i messaggi di stato soltanto quando il modulo rn131 si sveglia dallo sleep.
+ *
+ * \subsection lcd_custom_msg_subsec Visualizzare messaggi personalizzati
+ * Spesso è utile visualizzare dei messaggi personalizzati a schermo per l'analisi del comportamento del firmware.
+ * Per ottenere un messaggio sul display è necessario prima cancellarlo, poi caricare il buffer globale con il messaggio e poi visualizzarlo tramite la funzione Lcd_Printf().
+ * Di seguito è presente un esempio di codice da inserire nel main()
+ *
+ * \code{.c}
+ * if(update_lcd == 1)
+ * {
+ *   Lcd_CLS();
+ *
+ *   sprintf(buffer, \<messaggio da visualizzare\>);
+ *   Lcd_Printf(buffer);
+ *  }
+ * \endcode
+ *
+ *
+ *
+ * \section reset_sec Abilitare il reset all'overflow della seriale
+ * L'evento di overflow della seriale può essere causato da:
+ *  - il loop principale non riesce a smaltire i messaggi che arrivano dalla seriale perchè inibito alla lettura
+ *  - il buffer circolare è pieno e non può più ricevere messaggi da quello hardware
+ *
+ * Questo comporta la perdita di informazioni che potrebbero portare allo stallo del firmware.
+ * Per esempio, quando si esce dalla modalità comandi, viene inviata ad intervalli regolari la stringa "exit" fino a quando si riceve la risposta "EXIT" dal modulo rn131.
+ * Se la suddetta risposta non viene ricevuto perchè il buffer di ricezione è pieno, allora il firmware rimarrà bloccato nello stesso stato indefinitivamente. Per evitare
+ * queste situazioni, è possibile resettare il firmware quando si ha l'evento di overflow decommentando la definizione ::RESET_ON_UART_OVERFLOW.
+ *
+ *
+ *
+ * \section config_wifly Configurazione del modulo wifly
+ * - Controllare che il modulo sia almeno alla versione 4.41. Se così non fosse, aggiornarlo come spiegato nel manuale.
+ * - Dopo essere passati alla versione 4.41, ripetere la procedura di aggiornamento, però utilizzando ftp cupdate wifly3-441.mif
+ * - Entrare nella modalità AP e configurare la rete per avere accesso ad internet
+ * - Impostare i dati del server ftp da cui prendere il file di configurazione (usare l'opzione set dns backup xxx)
+ * - Scaricare il file di configurazione tramite ftp
+ * - Caricare il nuovo file di configurazione
+ * - Reimpostare l'access point a cui collegarsi
+ *
+ *
+ *
+ *
+ * \section config_server Configurazione del server
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ */

@@ -1,0 +1,16 @@
+La massima frequenza di aggiornamento quando si viaggia ad una frequenza di clock di 16 MHz e non ci sono elaborazioni in corso è di 
+
+                           fmax = 30 kHz  ----> Tmax = 33.3 us
+                           
+Ogni volta che viene ricevuto un carattere viene aggiunto un ritardo di 142 us.
+
+Quando viene ricevuto il carattere di fine messaggio, viene aggiunto un ulteriore ritardo dovuto a due fattori:
+  1 - il tempo di riconoscimento del messaggio rispetto la lista messaggi
+  2 - le operazioni da eseguire a seconda del messaggio ricevuto
+  
+Il primo fattore è a sua volta influenzato da:
+  1 - numero di messaggi da confrontare
+  2 - lunghezza della stringa ricevuta in cui bisogna ricercare il messaggio
+  
+Se la comunicazione ha un baud rate di 9600, il periodo di lettura buffer, con i massimi dealy, deve essere minore di 2 ms, altrimenti avviene un overflow
+   

@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   id="svg5200"
+   version="1.1"
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="schema logico dispositivo di misura.svg"
+   inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+   inkscape:export-xdpi="99"
+   inkscape:export-ydpi="99">
+  <defs
+     id="defs3">
+    <marker
+       inkscape:stockid="Arrow1Mstart"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Mstart"
+       style="overflow:visible">
+      <path
+         id="path3887"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         transform="scale(0.4) translate(10,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Mend"
+       style="overflow:visible;">
+      <path
+         id="path3890"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         transform="scale(0.4) rotate(180) translate(10,0)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     inkscape:document-units="mm"
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.7"
+     inkscape:cx="232.9521"
+     inkscape:cy="636.01634"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1366"
+     inkscape:window-height="706"
+     inkscape:window-x="1272"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata4">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g5738"
+       transform="matrix(0.46986286,0,0,0.46986286,59.039309,204.60101)"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <rect
+         ry="7.5977478"
+         y="255.21933"
+         x="227.14285"
+         height="78.571426"
+         width="120.00001"
+         id="rect5206"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:3.54330707;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text5716"
+         y="289.3815"
+         x="286.97879"
+         style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="289.3815"
+           x="286.97879"
+           id="tspan5718"
+           sodipodi:role="line">ID UNIVOCO</tspan><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="306.8815"
+           x="286.97879"
+           sodipodi:role="line"
+           id="tspan3031">(MAC ADDRESS)</tspan></text>
+    </g>
+    <g
+       transform="matrix(1.0801046,0,0,1.0801046,-79.349401,103.80785)"
+       id="g5738-2"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <rect
+         ry="7.5977478"
+         y="255.21933"
+         x="227.14285"
+         height="78.571426"
+         width="120.00001"
+         id="rect5206-2"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:3.54330707;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text5716-1"
+         y="290.85123"
+         x="286.4866"
+         style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="290.85123"
+           x="286.4866"
+           id="tspan5718-6"
+           sodipodi:role="line">INTERFACCIA</tspan><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="308.35123"
+           x="286.4866"
+           sodipodi:role="line"
+           id="tspan5770">WIFI</tspan></text>
+    </g>
+    <g
+       transform="matrix(0.46735096,0,0,0.46735096,123.31385,206.1452)"
+       id="g5738-8"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <rect
+         ry="7.5977478"
+         y="255.21933"
+         x="218.47052"
+         height="78.571426"
+         width="141.35249"
+         id="rect5206-5"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:3.84565115;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text5716-7"
+         y="282.10464"
+         x="289.36551"
+         style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="282.10464"
+           x="289.36551"
+           id="tspan5718-61"
+           sodipodi:role="line">TEMPORIZZATORE</tspan><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="299.60464"
+           x="289.36551"
+           sodipodi:role="line"
+           id="tspan3033">ABILITAZIONE</tspan><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="317.10464"
+           x="289.36551"
+           sodipodi:role="line"
+           id="tspan3035">WIFI</tspan></text>
+    </g>
+    <g
+       transform="matrix(0.69712137,0,0,0.69712137,237.86579,49.677828)"
+       id="g5738-8-8"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <rect
+         ry="7.5977478"
+         y="255.21933"
+         x="218.47052"
+         height="78.571426"
+         width="141.35249"
+         id="rect5206-5-9"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:3.84565115;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text5716-7-2"
+         y="273.2692"
+         x="289.10916"
+         style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="273.2692"
+           x="289.10916"
+           id="tspan5718-61-7"
+           sodipodi:role="line">SENSORE</tspan><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="290.7692"
+           x="289.10916"
+           sodipodi:role="line"
+           id="tspan5812">+</tspan><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="308.2692"
+           x="289.10916"
+           sodipodi:role="line"
+           id="tspan5814">CIRCIUTO DI</tspan><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="325.7692"
+           x="289.10916"
+           sodipodi:role="line"
+           id="tspan5816">CONDIZIONAMENTO</tspan></text>
+    </g>
+    <g
+       transform="matrix(0.69712137,0,0,0.69712137,239.26276,150.78447)"
+       id="g5738-2-1"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <rect
+         ry="7.5977478"
+         y="255.21933"
+         x="227.14285"
+         height="78.571426"
+         width="120.00001"
+         id="rect5206-2-2"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:3.54330707;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text5716-1-3"
+         y="290.465"
+         x="287.53592"
+         style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="290.465"
+           x="287.53592"
+           sodipodi:role="line"
+           id="tspan5770-4">CIRCUITO DI</tspan><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="307.965"
+           x="287.53592"
+           sodipodi:role="line"
+           id="tspan5863">ACQUISIZIONE</tspan></text>
+    </g>
+    <g
+       transform="matrix(0.69712137,0,0,0.69712137,364.11096,236.45508)"
+       id="g5738-2-1-1"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <rect
+         ry="7.5977478"
+         y="255.21933"
+         x="227.14285"
+         height="78.571426"
+         width="120.00001"
+         id="rect5206-2-2-1"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:3.54330707;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text5716-1-3-3"
+         y="299.5192"
+         x="286.6199"
+         style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="299.5192"
+           x="286.6199"
+           sodipodi:role="line"
+           id="tspan5863-7">MEMORIA</tspan></text>
+    </g>
+    <g
+       transform="matrix(0.69712137,0,0,0.69712137,240.25864,236.45508)"
+       id="g5738-2-1-4"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <rect
+         ry="7.5977478"
+         y="255.21933"
+         x="227.14285"
+         height="78.571426"
+         width="120.00001"
+         id="rect5206-2-2-2"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:3.54330707;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text5716-1-3-7"
+         y="290.7692"
+         x="286.76688"
+         style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="290.7692"
+           x="286.76688"
+           sodipodi:role="line"
+           id="tspan5863-9">GESTORE DELLA</tspan><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="308.2692"
+           x="286.76688"
+           sodipodi:role="line"
+           id="tspan5929">MEMORIA</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.23505747;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#Arrow1Mstart);marker-end:url(#Arrow1Mend)"
+       d="m 483.43511,441.76084 36.34991,0"
+       id="path6117"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.23505747;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#Arrow1Mstart);marker-end:url(#Arrow1Mend)"
+       d="m 396.29494,437.5863 -96.0483,0"
+       id="path6489"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.23505747;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)"
+       d="m 438.67157,281.82378 0,46.20894"
+       id="path6859"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.23505747;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)"
+       d="m 510.57306,354.05989 -29.12972,0"
+       id="path7045"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.23505747;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)"
+       d="m 259.08441,361.45108 0,16.12328"
+       id="path7231"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.23505747;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)"
+       d="m 439.72786,382.96024 0,29.57634"
+       id="path7417"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.33038223;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#Arrow1Mstart);marker-end:url(#Arrow1Mend)"
+       d="m 164.24807,437.62888 -82.684734,0"
+       id="path7603"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:9.0111227px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nyala;-inkscape-font-specification:Nyala"
+       x="111.9164"
+       y="434.00919"
+       id="text7973"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"><tspan
+         sodipodi:role="line"
+         id="tspan7975"
+         x="111.9164"
+         y="434.00919"
+         style="font-size:15.01853848px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;writing-mode:lr-tb;text-anchor:middle;font-family:Nyala;-inkscape-font-specification:Nyala">Link</tspan><tspan
+         sodipodi:role="line"
+         x="111.9164"
+         y="452.78235"
+         id="tspan7977"
+         style="font-size:15.01853848px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;writing-mode:lr-tb;text-anchor:middle;font-family:Nyala;-inkscape-font-specification:Nyala">wireless</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.23505747;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:none;marker-end:url(#Arrow1Mend)"
+       d="m 195.17568,361.9939 0,15.19966"
+       id="path7979"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99"
+       sodipodi:nodetypes="cc" />
+    <g
+       transform="matrix(0.66134764,0,0,0.66134764,367.04171,160.40554)"
+       id="g5738-8-1"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99">
+      <rect
+         ry="7.5977478"
+         y="255.21933"
+         x="218.47052"
+         height="78.571426"
+         width="141.35249"
+         id="rect5206-5-7"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:3.84565115;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text5716-7-4"
+         y="290.465"
+         x="289.36551"
+         style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="290.465"
+           x="289.36551"
+           id="tspan5718-61-0"
+           sodipodi:role="line">TEMPORIZZATORE</tspan><tspan
+           style="font-size:14px;text-align:center;text-anchor:middle"
+           y="307.965"
+           x="289.36551"
+           sodipodi:role="line"
+           id="tspan3035-4">ACQUISIZIONE</tspan></text>
+    </g>
+    <rect
+       style="color:#000000;fill:none;stroke:#ffc100;stroke-width:4.94022989;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:14.82069059, 4.94023019;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect3072"
+       width="189.21866"
+       height="208.14053"
+       x="136.36827"
+       y="298.02048"
+       ry="17.247204"
+       rx="20.913641"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+    <rect
+       style="color:#000000;fill:none;stroke:#00bf00;stroke-width:4.25762033;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:12.77286094, 4.25762031;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect3072-8"
+       width="260.85196"
+       height="213.12103"
+       x="360.3822"
+       y="299.57401"
+       ry="17.659904"
+       rx="28.831007"
+       inkscape:export-filename="C:\Users\Luca Lucci\Documents\progetto_SMPPC-PRA\gestione_sensori.X\doc\Risorse\schema logico dispositivo di misura.png"
+       inkscape:export-xdpi="99"
+       inkscape:export-ydpi="99" />
+  </g>
+</svg>
