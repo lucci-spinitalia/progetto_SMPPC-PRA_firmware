@@ -887,8 +887,8 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
   char uart2_buffer_rx_temp[UART2_BUFFER_SIZE_RX];
   char *token_ptr[10];
   char *token_winner = NULL;
-  //char *null_character = NULL;
-  int null_check_index = 0;
+  char *null_character = NULL;
+  //int null_check_index = 0;
   int token_count = 0;
   static int bookmark = 0;
 
@@ -909,33 +909,11 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
   // length
   if((uart2_buffer_rx_rd_ptr + bookmark) < uart2_buffer_rx_wr_ptr)
   {
-    // it checks for null character into the string
-    // and replace it with 0x01 character.
-    for(null_check_index = uart2_buffer_rx_rd_ptr  + bookmark; null_check_index < (uart2_buffer_rx_wr_ptr + 1); null_check_index++)
-    {
-      if(uart2_buffer_rx[null_check_index] == '\0')
-        uart2_buffer_rx[null_check_index] = 1;
-    }
-
     length_to_write = uart2_buffer_rx_wr_ptr - (uart2_buffer_rx_rd_ptr  + bookmark);
     memcpy(uart2_buffer_rx_temp, &uart2_buffer_rx[uart2_buffer_rx_rd_ptr + bookmark], length_to_write);
   }
   else
   {
-    // it checks for null character into the string
-    // and replace it with 0x01 character.
-    for(null_check_index = uart2_buffer_rx_rd_ptr + bookmark; null_check_index < UART2_BUFFER_SIZE_RX; null_check_index++)
-    {
-      if(uart2_buffer_rx[null_check_index] == '\0')
-        uart2_buffer_rx[null_check_index] = 1;
-    }
-
-    for(null_check_index = 0; null_check_index < (uart2_buffer_rx_wr_ptr + 1); null_check_index++)
-    {
-      if(uart2_buffer_rx[null_check_index] == '\0')
-        uart2_buffer_rx[null_check_index] = 1;
-    }
-
     length_to_write = (UART2_BUFFER_SIZE_RX - (uart2_buffer_rx_rd_ptr + bookmark));
     memcpy(uart2_buffer_rx_temp, &uart2_buffer_rx[uart2_buffer_rx_rd_ptr + bookmark], length_to_write);
     memcpy(&uart2_buffer_rx_temp[length_to_write], uart2_buffer_rx, uart2_buffer_rx_wr_ptr);
@@ -945,15 +923,16 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
 
   uart2_buffer_rx_temp[length_to_write] = '\0';
 
-  /*null_character = strchr(uart2_buffer_rx_temp, '\0');
+  // it checks for null character into the string
+  // and replace it with 0x01 character.
+  null_character = strchr(uart2_buffer_rx_temp, '\0');
   while(null_character != NULL)
   {
     if(null_character < &uart2_buffer_rx_temp[length_to_write])
       *null_character = 1;
     else
       break;
-  }*/
-
+  }
 
   // it search for token
   for(token_count = 0; token_count < token_number; token_count++)
@@ -994,7 +973,6 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
 
   data[length_to_write - 1] = 0;
 
-  //memcpy(data, uart2_buffer_rx_temp, length_to_write);
   uart2_buffer_rx_data_cnt -= length_to_write;
 
   if(uart2_buffer_rx_data_cnt == 0)
