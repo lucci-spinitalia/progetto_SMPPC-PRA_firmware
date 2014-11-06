@@ -126,6 +126,50 @@
  *  - Valore sensore: dato acquisito dal sensore con rappresentazione esadecimale in formato ASCII;
  *  - Fine frame: carattere di fine frame.
  *
+ * \subsubsection message_format_category_sec La categoria del sensore
+ * Quando si collega un sensore esterno al modulo di acquisizione, deve essere impostata la relativa categoria di appartenenza, così che il web server possa
+ * interpretare correttamente il dato ricevuto.
+ *
+ * Di seguito sono elencate le categorie disponibili con le relative relazioni di conversione.
+ * 
+ *  <center> 
+ *
+ *  Parametri       | Descrizione                 | Conversione
+ * :---------------:|:---------------------------:|:-------------:
+ *  1               | Temperatura                 | \f$ \frac {value - 0,424} {0,00625} \f$
+ *  2               | Trasformatore differenziale | -
+ *
+ *  </center>
+ *
+ * \subsubsection message_format_internal_sec Lo stato interno
+ * Il modulo di acquisizione e controllo tiene traccia di alcuni eventi rilevanti ed invia queste informazioni attravero il campo "Stato interno". Il dato in 
+ * questione è un numero in formato ascii che, per essere decodificato, deve prima essere convertito in formato binario ed associare ad ogni bit un evento contenuto
+ * nella seguente tabella:
+ * 
+  *  <center> 
+ *  Posizione       | Descrizione                 
+ * :---------------:|:---------------------------:
+ *  1               | Batteria quasi scarica                 
+ *  2               | Collisione sul bus spi
+ *  3               | EEPROM piena
+ *  4               | Reset inatteso
+ *  5               | Overflow sulla seriale
+ *  6               | EEPROM non identificata
+ *
+ *  </center>
+ *
+ * Per esempio, se lo stato interno è pari a:
+ * \code
+ *  stato_interno = 17
+ * \endcode
+ *
+ * Il corrispettivo binario sarà di:
+ * \code
+ * 010001
+ * \endcode
+ *
+ * Associando le posizioni con la tabella, significa che è la batteria interna è quasi scarica e che si è verificato un evento di overflow sulla seriale.
+ *
  * \subsection configuration_messages_sec Messaggi di configurazione
  * Il modulo di acquisizione accetta dei messaggi di configurazione in risposta ad una qualsiasi richiesta http inoltrata all’host. I comandi in questione possono essere 
  * spediti contemporaneamente e devono sempre essere delimitati dal carattere \\r (carriege return). Nel caso fosse prevista una risposta da parte del modulo di acquisizione, 
@@ -174,7 +218,7 @@
  * Si ottiene il livello attuale della batteria attraverso una richiesta GET avente come parametro "batt" delimitato da ",". Il dato ricevuto è una stringa ascii
  * nel formato x.xx rappresentante il livello di tensione in V.
  *
- * \subsubsection get_batt_sec Messaggio set_sleep
+ * \subsubsection set_sleep_sec Messaggio set_sleep
  * Imposta il tempo di sleep del dispositivo wifi in secondi.
  *
  * \subsubsection set_cat_sec Messaggio set_category

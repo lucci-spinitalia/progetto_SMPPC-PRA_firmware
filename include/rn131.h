@@ -54,6 +54,7 @@ struct rn131_struct
   unsigned tcp_error :1; /**< indica se c'è stato un errore nel connettersi all'host predefinito */
   unsigned cmd_mode :1; /**< indica se ci si trova in modalità comandi*/
   unsigned time_set :1; /**< tempo sincronizzato correttamente con il server ntp*/
+  unsigned ap_mode :1; /**< indica se si trova in modalità access point */
 } rn131; /**< Rappresenta lo stato e le richieste per il modulo rn131*/
 
 /** P R O T O T Y P E S ****************************/

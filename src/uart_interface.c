@@ -557,13 +557,14 @@ unsigned char uart1_buffer_rx_load(void)
 
   if(!uart1_status.buffer_rx_full)
   {
-    chTemp = Read1USART();
-
     if(RCSTA1bits.FERR)	// Frame error
     {
       uart1_status.buffer_rx_error_frame = 1;
+      chTemp = Read1USART();
       return 0;
     }
+
+    chTemp = Read1USART();
 
     // if I'm in rs485 mode and I sent something then I wont read it from
     // buffer (no loopback)
@@ -631,13 +632,14 @@ unsigned char uart2_buffer_rx_load(void)
 
   if(!uart2_status.buffer_rx_full)
   {
-    chTemp = Read2USART();
-
     if(RCSTA2bits.FERR)	// Frame error
     {
+      chTemp = Read2USART();
       uart2_status.buffer_rx_error_frame = 1;
       return 0;
     }
+
+    chTemp = Read2USART();
 
     // if I'm in rs485 mode and I sent something then I wont read it from
     // buffer (no loopback)
@@ -907,7 +909,7 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
   // if it doesn't roll up then it copy message into temp buffer
   // else it copy the last part of the buffer and the first one until data
   // length
-  if((uart2_buffer_rx_rd_ptr + bookmark) < uart2_buffer_rx_wr_ptr)
+  if((uart2_buffer_rx_rd_ptr + bookmark) <= uart2_buffer_rx_wr_ptr)
   {
     length_to_write = uart2_buffer_rx_wr_ptr - (uart2_buffer_rx_rd_ptr  + bookmark);
     memcpy(uart2_buffer_rx_temp, &uart2_buffer_rx[uart2_buffer_rx_rd_ptr + bookmark], length_to_write);
@@ -932,6 +934,8 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
       *null_character = 1;
     else
       break;
+
+    null_character = strchr(uart2_buffer_rx_temp, '\0');
   }
 
   // it search for token

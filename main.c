@@ -328,6 +328,7 @@ void interrupt myIsr(void)
       rn131.cmd_mode_rqst = 0;
       rn131.time_set_rqst = 0;
       rn131.cmd_mode = 0;
+
       rn131.ready = 0;
 
       communication_ready = 0;
@@ -374,7 +375,7 @@ void interrupt myIsr(void)
     
     user_timer_hs();
 
-    if((rn131.wakeup == 1) && (rn131.ready == 1) && (rn131.connected == 0))
+    if((rn131.wakeup == 1) && (rn131.ready == 1) && (rn131.connected == 0) && (rn131.ap_mode == 0))
     {
       connection_timer++;
       if(connection_timer >= CONNECTION_TIMEOUT_HS)
@@ -663,6 +664,7 @@ int main(void)
   rn131.tcp_open = 0;
   rn131.tcp_error = 0;
   rn131.cmd_mode = 0;
+  rn131.ap_mode = 0;
   rn131.cmd_mode_rqst = 0;
   rn131.cmd_mode_exit_rqst = 0;
   rn131.cmd_mode_reboot_rqst = 0;
@@ -846,7 +848,6 @@ int main(void)
             {
               message_load_uart("run web_app\r");
 
-              //@todo controllare che sia entrato in modalità web_sever
               rn131.cmd_http_rqst = 0;
               // annullo le altre richieste in sospeso
               *cmd_http_start = 0;
@@ -1124,8 +1125,18 @@ int main(void)
           if(rn131_connection_init(buffer, rn131_message_length) == 1)
           {
             memset(buffer, 0, rn131_message_length);
+            /*if(rn131.ap_mode == 1)
+            {
+              rn131_sleep();
+              communication_ready = 0;
+              tcp_start_timer_flag = -1;
+              
+              SLEEP();
+            }*/
+            
             continue;
           }
+
 
           // Controllo che riceva il messaggio CMD dopo una richiesta d'ingresso
           // in modalità command
@@ -1265,7 +1276,7 @@ int main(void)
           }
         }
       }
-      else if((rn131.wakeup == 1) && (communication_ready == 0))
+      else if((rn131.wakeup == 1) && (communication_ready == 0) && (rn131.cmd_mode_sleep_rqst == 0))
       {
         sprintf(buffer, "%s%s", rn131.mac, end_of_message);
         uart2_buffer_tx_seq_load(buffer, strlen(buffer));

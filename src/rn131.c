@@ -29,6 +29,12 @@ char rn131_connection_init(char *buffer, int rn131_message_length)
 
   /* MESSAGE 1 */
   /* This is the first message sent after boot */
+  if(rn131_parse_message(buffer, "WiFly WebConfig") == 1)
+  {
+    rn131.ap_mode = 1;
+    return 1;
+  }
+
   if(rn131_parse_message(buffer, "wifly-GSX Ver: ") == 1)
   {
     rn131_parse_ptr = buffer;
@@ -47,6 +53,12 @@ char rn131_connection_init(char *buffer, int rn131_message_length)
     rn131.cmd_mode = 0;
     rn131.ready = 0;
 
+    if(rn131.ap_mode)
+    {
+      rn131.ap_mode = 0;
+      rn131.cmd_mode_sleep_rqst = 1;
+    }
+    
     return 1;
   }
 
