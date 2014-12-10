@@ -425,42 +425,32 @@
  * Il modulo di acquisizione integra al suo interno un sensore di temperatura della Microchip TC1046. Questo viene campionato ad intervalli regolari determinati dalla variabile 
  * timeout_update_adc_temp_hs.
  * Il range di temperatura del sensore va da -40 fino a +125 ed ha un'accuratezza tipica di +-0.5°C. Sapendo che il coefficiente di conversione è di 6,25 mV/°C e
- * che il sensore misura 0.580 mV a 25 °C, significa che l'errore relativo in temperatura a tale temperatura è di:
+ * che il sensore misura 0.580 mV a 25 °C, significa che l'errore relativo a tale temperatura è di:
  *
  * \f[ T_{err_sens} {=} 6,25 \times 0,5 {=} 3,125 mV \f]
  * \f[ {e_t {=} \frac {T_{err sens}} {V_{temp @ 25°C}} {=} \frac {3,125} {580} {=} 0,54\%} \f]
  *
- * Visto che l'adc utilizzato è da 10 bit con un errore di +-0,5 LSB, che corrisponde ad un errore relativo di:
+ * Visto che l'adc utilizzato è da 12 bit con un errore di +-0,5 LSB, che corrisponde ad un errore relativo di:
  *
- *  \f[ LSB {=} \frac {V_{ref}} {2^{10}} {=} \frac {2,5} {1024} {=} 2,44 mV \f]
+ *  \f[ LSB {=} \frac {V_{ref}} {2^{10}} {=} \frac {2,048} {1024} {=} 0,5 mV \f]
  *
- *  \f[ e_{adc} {=} \frac {\frac {LSB} {2}} {V_{25°C}} {=} \frac {1,22} {580} {=} 0,21\% \f]
+ *  \f[ e_{adc} {=} \frac {\frac {LSB} {2}} {V_{25°C}} {=} \frac {0,25} {580} {=} 0,043\% \f] 
  *
  * Quindi, l'errore relativo commesso sarà di:
  *
- * \f[ e_{rel} {=} e_t + e_{adc} {=} 0,54 + 0,21 {=} 0.75\% \f]
+ * \f[ e_{rel} {=} e_t + e_{adc} {=} 0,54 + 0,043 {=} 0,583\% \f]
  *
  * L'errore assoluto commesso sarà di:
  *
- * \f[ e_{ass} {=} V_{25{°}C} \times e_{rel} {=} 0,580 \times 0,0075 {=} 4,35 mV \f]
+ * \f[ e_{ass} {=} V_{25{°}C} \times e_{rel} {=} 0,580 \times 0,0075 {=} 3,38 mV \f]
  *
  * L'errore in temperatura sarà pari a:
  *
- * \f[ T_{err} {=} e_{ass} \times C_{temp} {=} \frac {4,35} {6,25} {=} +-0,7 °C @ 25 {°}C \f]
+ * \f[ T_{err} {=} e_{ass} \times C_{temp} {=} \frac {3,38} {6,25} {=} +-0,54 °C @ 25 {°}C \f]
  *
- * \subsubsection temp_adc_amp_sec Aumento della sensibilità
- * Nella configurazione diretta sensore-adc, oltre ad avere un errore in temperatura peggiorato, si ha anche una risoluzione di soli:
+ * La risoluzione minima apprezzata sarà di:
  *
- * \f[ T_{res} {=} \frac {LSB} {6,25} {=} 0,39 °C \f]
- *
- * Per ovviare a quest'ultimo problema è stato introdotto un amplificatore operazionale in configurazione non-invertente con guadagno pari a 3,13. Sebbene l'errore
- * commesso non varii, la risoluzione aumenterà fino a:
- *
- * \f[ T_{res} {=} \frac {LSB} {6,25 \times G_{amp}} {=} 0,12 °C \f]
- *
- * a scapito della massima temperatura misurabile, che sarà di:
- *
- * \f[ T_{max} = \frac {{\frac {V_{ref mV}} {G_amp}} - 424} {6,25} = 65,5 °C \f]
+ * \f[ T_{res} {=} \frac {LSB} {6,25} {=} 0,08 °C \f]
  *
  * \section lcd_sec Abilitare il display
  * 

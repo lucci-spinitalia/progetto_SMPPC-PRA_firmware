@@ -2,6 +2,7 @@ build/
 dist/
 doc/html/
 doc/latex/
+doc/*.pdf
 nbproject/
 funclist
 l.obj
