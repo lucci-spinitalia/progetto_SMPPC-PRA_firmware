@@ -137,7 +137,7 @@
  *  Parametri       | Descrizione                 | Conversione
  * :---------------:|:---------------------------:|:-------------:
  *  1               | Temperatura                 | \f$ \frac {value \times 0,32 - 0,424} {0,00625} \f$
- *  2               | Trasformatore differenziale | -
+ *  2               | Trasformatore differenziale | \f$ \frac {5 - value \times 7.69} {0,75} \f$
  *
  *  </center>
  *

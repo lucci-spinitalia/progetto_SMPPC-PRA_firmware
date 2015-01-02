@@ -29,10 +29,10 @@
 /** I N C L U D E S ********************************/
 
 /** O S C I L L A T O R  ***************************/
-#define FOSC_MHZ	16000000
+#define FOSC_MHZ	48000000
 
 #ifndef _XTAL_FREQ
-#define _XTAL_FREQ 16000000
+#define _XTAL_FREQ 48000000
 #endif
  
 /** T R I S         ********************************/
@@ -75,6 +75,10 @@
 #define temp_an_tris TRISAbits.TRISA5
 #define temp_an_digital ANCON0bits.PCFG4
 #define temp_an      PORTAbits.AN4
+
+#define lvdt_an_tris TRISAbits.TRISA1
+#define lvdt_an_digital ANCON0bits.PCFG1
+#define lvdt_an      PORTAbits.AN1
 
 /** L E D           ********************************/
 #define led_err_tris TRISEbits.TRISE3
