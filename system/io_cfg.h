@@ -29,10 +29,10 @@
 /** I N C L U D E S ********************************/
 
 /** O S C I L L A T O R  ***************************/
-#define FOSC_MHZ	48000000
+#define FOSC_MHZ	64000000
 
 #ifndef _XTAL_FREQ
-#define _XTAL_FREQ 48000000
+#define _XTAL_FREQ 64000000
 #endif
  
 /** T R I S         ********************************/
@@ -40,79 +40,62 @@
 #define OUTPUT_PIN 0
 
 /** S P I           ********************************/
-#define spi_cs1_tris TRISDbits.TRISD3
-#define spi_cs2_tris TRISDbits.TRISD2
+#define spi_cs_tris TRISDbits.TRISD3
 #define spi_sck_tris TRISDbits.TRISD6
 #define spi_sdo_tris TRISDbits.TRISD4
 #define spi_sdi_tris TRISDbits.TRISD5
 
-#define spi_cs1 LATDbits.LATD3
-#define spi_cs2 LATDbits.LATD2
-
+#define spi_cs LATDbits.LATD3
 
 /** U S A R T       ********************************/
 #define uart1_tx_tris TRISCbits.TRISC6
 #define uart1_rx_tris TRISCbits.TRISC7
-#define uart1_rs485_tx_enable_tris TRISDbits.TRISD4
-#define uart1_rs485_tx_enable LATDbits.LATD4
+#define uart1_rs485_tx_enable_tris TRISDbits.TRISD7
+#define uart1_rs485_tx_enable LATDbits.LATD7
 
 #define uart2_tx_tris TRISGbits.TRISG1
 #define uart2_rx_tris TRISGbits.TRISG2
-#define uart2_rs485_tx_enable_tris TRISDbits.TRISD5
-#define uart2_rs485_tx_enable LATDbits.LATD5
 
 /** ADC             ********************************/
-#define ADC_RESOLUTION_BIT 10
-#define ADC_REFERENCE 2.5
-#define BATTERY_PART 1.680851
-#define battery_ref_tris TRISAbits.RA3
-#define battery_ref_digital ANCON0bits.PCFG3
+#define ADC_RESOLUTION_BIT 12
+#define ADC_REFERENCE 2.048
+#define BATTERY_PART 2
 
 #define battery_an_tris TRISAbits.TRISA0
-#define battery_an_digital ANCON0bits.PCFG0
+#define battery_an_analog ANCON0bits.ANSEL0
 #define battery_an      PORTAbits.AN0
 
-#define temp_an_tris TRISAbits.TRISA5
-#define temp_an_digital ANCON0bits.PCFG4
-#define temp_an      PORTAbits.AN4
+#define temp_an_tris TRISAbits.TRISA1
+#define temp_an_analog ANCON0bits.ANSEL1
+#define temp_an      PORTAbits.AN1
 
-#define lvdt_an_tris TRISAbits.TRISA1
-#define lvdt_an_digital ANCON0bits.PCFG1
-#define lvdt_an      PORTAbits.AN1
+#define ext1_an_tris TRISAbits.TRISA2
+#define ext1_an_analog ANCON0bits.ANSEL2
+#define ext1_an      PORTAbits.AN2
+
+#define ext2_an_tris TRISFbits.TRISF7
+#define ext2_an_analog ANCON0bits.ANSEL5
+#define ext2_an      PORTFbits.AN5
+
+#define ext_shut_an_tris TRISAbits.TRISA5
+#define ext_shut_an_analog ANCON0bits.ANSEL4
+#define ext_shut      PORTAbits.RA5
 
 /** L E D           ********************************/
-#define led_err_tris TRISEbits.TRISE3
-#define led_err      LATEbits.LATE3
-#define led_no_err_tris TRISAbits.TRISA4
-#define led_no_err   LATAbits.LA4
+#define led_err_tris TRISEbits.TRISE4
+#define led_err      LATEbits.LATE4
+#define led_no_err_tris TRISEbits.TRISE5
+#define led_no_err   LATEbits.LE5
 
 /** B U T T O N     ********************************/
 
 /** C O N T R O L    ********************************/
-#define alim_5V_enable_tris TRISFbits.TRISF5
-#define alim_5V_enable LATFbits.LF5
+#define alim_3_3V_enable_tris TRISFbits.TRISF3
+#define alim_3_3V_enable LATFbits.LF3
 
-#define alim_3_3V_enable_tris TRISFbits.TRISF7
-#define alim_3_3V_enable LATFbits.LF7
-
-#define backligth_enable_tris TRISGbits.RG0
-#define backligth_enable LATGbits.LG0
-
-#define contrast_cs_tris TRISDbits.RD7
-#define contrast_cs LATDbits.LD7
-
-#define contrast_ck_tris TRISDbits.RD0
-#define contrast_ck LATDbits.LD0
-
-#define contrast_ud_tris TRISDbits.RD1
-#define contrast_ud LATDbits.LD1
-
-#define MCP73811_ce_tris TRISGbits.RG3
-#define MCP73811_prg_tris TRISGbits.RG4
-#define MCP73811_prg LATGbits.LATG4
-
-#define v_usb_tris TRISBbits.TRISB0
-#define v_usb PORTBbits.RB0
+#define charger_ce_tris TRISGbits.TRISG3
+#define charger_prg_tris TRISGbits.TRISG4
+#define charger_prg LATGbits.LATG4
 
 /** R N 1 3 1    ************************************/
 #define rn131_rts_tris TRISBbits.TRISB2
@@ -121,16 +104,8 @@
 #define rn131_int_enable INTCON3bits.INT2IE
 #define rn131_int_flag INTCON3bits.INT2F
 
-/** U S B    ****************************************/
-#define usb_d_min_tris TRISFbits.TRISF3
-#define usb_d_plus_tris TRISFbits.TRISF4
-
 /** B A T T  A N A L O G  ***************************/
-#define adc_batt_tris TRISFbits.TRISF2
-#define adc_batt LATFbits.LATF2
-
-/**          ****************************************/
-#define csn_tris TRISCbits.RC2
-#define csn LATCbits.LATC2
+#define adc_batt_enable_tris TRISFbits.TRISF2
+#define adc_batt_enable LATFbits.LATF2
 
 #endif // _IO_CFG_H

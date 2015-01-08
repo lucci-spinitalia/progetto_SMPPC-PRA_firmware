@@ -402,7 +402,9 @@ unsigned char uart2_buffer_send(void)
     if(uart2_rs485_enable)
     {
       uart2_rs485_tx_count++;
+#ifdef uart2_rs485_tx_enable
       uart2_rs485_tx_enable = 1;
+#endif
     } 
 
     Write2USART(uart2_buffer_tx[uart2_buffer_tx_rd_ptr]);
@@ -1226,7 +1228,11 @@ void uart1_tsr_poll(void)
 void uart2_tsr_poll(void)
 {
   if(TXSTA2bits.TRMT)
+  {
+#ifdef uart2_rs485_tx_enable
     uart2_rs485_tx_enable = 0;
+#endif
+  }
 }
 
 /**************************************************

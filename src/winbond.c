@@ -28,38 +28,38 @@ unsigned long eeprom_data_count;
 int winbond_identification(unsigned char *device_id)
 {
   // enable chip
-  spi_cs2 = 0;
+  spi_cs = 0;
 
   // send "Read Manufacturer / Device ID" instruction (90h)
   if(WriteSPI2(0x90) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   // write address 0x000000
   if(WriteSPI2(0x00) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   if(WriteSPI2(0x00) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   if(WriteSPI2(0x00) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   getsSPI2(device_id, 2);
 
   // disable chip
-  spi_cs2 = 1;
+  spi_cs = 1;
 
   return 0;
 }
@@ -72,17 +72,17 @@ int winbond_identification(unsigned char *device_id)
 int winbond_write_enable(void)
 {
   // enable chip
-  spi_cs2 = 0;
+  spi_cs = 0;
 
   // send "Write Enable" instruction
   if(WriteSPI2(0x06) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   // disable chip
-  spi_cs2 = 1;
+  spi_cs = 1;
 
   return 0;
 }
@@ -138,17 +138,17 @@ int winbond_try_write_enable(unsigned int num_of_try)
 int winbond_write_disable(void)
 {
   // enable chip
-  spi_cs2 = 0;
+  spi_cs = 0;
 
   // send "Write Disable" instruction
   if(WriteSPI2(0x04) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   // disable chip
-  spi_cs2 = 1;
+  spi_cs = 1;
 
   return 0;
 }
@@ -223,12 +223,12 @@ int winbond_sector_erase(unsigned short long address)
     return -1;
 
   // enable chip
-  spi_cs2 = 0;
+  spi_cs = 0;
 
   // send "Sector Erase" instruction
   if(WriteSPI2(0x20) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
@@ -237,26 +237,26 @@ int winbond_sector_erase(unsigned short long address)
   address_byte = (unsigned char) (address >> 16);
   if(WriteSPI2(address_byte) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   address_byte = (unsigned char) (address >> 8);
   if(WriteSPI2(address_byte) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   address_byte = (unsigned char) address;
   if(WriteSPI2((unsigned char) address) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   // disable chip
-  spi_cs2 = 1;
+  spi_cs = 1;
 
   // attendo che l'operazione di formattazione sia terminata facendo un polling
   // sul bit BUSY dello status_register 1. Da datasheet, il tempo tipico per cancellare
@@ -306,19 +306,19 @@ int winbond_status_register_read(unsigned char *status_register, unsigned char s
     instruction = 0x35;
 
   // enable chip
-  spi_cs2 = 0;
+  spi_cs = 0;
 
   // send "Read Status Register" instruction
   if(WriteSPI2(instruction) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   getsSPI2(status_register, 1);
 
   // disable chip
-  spi_cs2 = 1;
+  spi_cs = 1;
 
   return 0;
 }
@@ -364,33 +364,33 @@ int winbond_page_program(unsigned char *data, int data_bytes, unsigned short lon
     return -1;
 
   // enable chip
-  spi_cs2 = 0;
+  spi_cs = 0;
 
   // send "Page Program" instruction
   if(WriteSPI2(0x02) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   address_byte = (unsigned char) (address >> 16);
   if(WriteSPI2(address_byte) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   address_byte = (unsigned char) (address >> 8);
   if(WriteSPI2(address_byte) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   address_byte = (unsigned char) address;
   if(WriteSPI2((unsigned char) address) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
@@ -398,12 +398,12 @@ int winbond_page_program(unsigned char *data, int data_bytes, unsigned short lon
   {
     if(WriteSPI2(data[data_bytes_count]) == -1)
     {
-      spi_cs2 = 1;
+      spi_cs = 1;
       return -1;
     }
   }
 
-  spi_cs2 = 1;
+  spi_cs = 1;
 
   // attendo che l'operazione di scrittura sia terminata facendo un polling
   // sul bit BUSY dello status_register 1. Da datasheet, il tempo tipico per scrivere
@@ -451,33 +451,33 @@ int winbond_data_read(unsigned char *data, unsigned short long data_bytes, unsig
     return -1;
 
   // enable chip
-  spi_cs2 = 0;
+  spi_cs = 0;
 
   // send "Read Data" instruction
   if(WriteSPI2(0x03) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   address_byte = (unsigned char) (address >> 16);
   if(WriteSPI2(address_byte) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   address_byte = (unsigned char) (address >> 8);
   if(WriteSPI2(address_byte) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
   address_byte = (unsigned char) address;
   if(WriteSPI2((unsigned char) address) == -1)
   {
-    spi_cs2 = 1;
+    spi_cs = 1;
     return -1;
   }
 
@@ -494,7 +494,7 @@ int winbond_data_read(unsigned char *data, unsigned short long data_bytes, unsig
     getsSPI2(data, data_bytes);
 
   // disable chip
-  spi_cs2 = 1;
+  spi_cs = 1;
 
   return 0;
 }

@@ -6,65 +6,58 @@
  * \version 1.0
  * \date 04/08/2014
  */
+//#define CONFIGURE_MODE /**< Abilita direttamente il webserver senza interferire con la seriale */
 
 #define USE_OR_MASKS /**< Abilita l'opeartore or per concatenare i parametri del timer1*/
 
 // Le seguenti definizioni contengono l'indirizzo di program memory per salvare
 // i puntatori circolari in caso di mancanza di batteria.
-#define EEPROM_COUNT_PTR 0x7000
-#define EEPROM_WRITE_PTR 0x7004
-#define EEPROM_SEND_PTR 0x7008
-#define ADC_TIMEOUT_PTR 0x700C
-#define DATA_DELAY_PTR 0x7010
-#define BATT_WARN_PTR 0x7014
-#define BATT_MIN_PTR 0x7018
-#define SLEEP_PTR 0x701C
-#define CATEGORY_PTR 0x7020
+#define EEPROM_COUNT_PTR 0x00
+#define EEPROM_WRITE_PTR 0x04
+#define EEPROM_SEND_PTR 0x08
+#define ADC_TIMEOUT_PTR 0x0C
+#define DATA_DELAY_PTR 0x10
+#define BATT_WARN_PTR 0x14
+#define BATT_MIN_PTR 0x18
+#define SLEEP_PTR 0x1C
+#define CATEGORY_PTR 0x20
 
-//#define LCD_WINSTAR /**< Abilita il display Winstar*/
-#define TIMEOUT_UPDATE_RQST_HS 50 /**< Periodo di invio delle richieste in centesimi di secondo*/
+#define TIMEOUT_UPDATE_RQST_MS 500 /**< Periodo di invio delle richieste in centesimi di secondo*/
 
-#ifdef LCD_WINSTAR
-#define TIMEOUT_UPDATE_LCD_HS 100 /**< Periodo di aggiornamento del display lcd in centesimi di secondo*/
-#endif
 /**
  * Offset per il Timer1.
  *
- * Il Timer1 è l'orologio di sistema ed è collegato ad un oscillatore esterno
- * con un quarzo da 32768 Hz. Utilizzando il registro a 16 bit ed il prescaler
- * 1:1, un periodo di 10ms equivale a:
+ * Il Timer1 scandisce il periodo di aggiornamento delle variabili di sistema.
+ * Incrementa con frequenza pari a quella d'istruzione (fosc/4) e passa per un
+ * prescaler pari a 4. Nel caso in cui la frequenza di clock sia di 64 MHz
  *
  * \f[
- *   n = \frac {10 \times 10^{-3}} {t_{ck}} = {10^{-2} \times 32768} = 327,68
+ *   n = \frac {1 \times 10^{-3}} {t_{ck} \times 4 \times prescaler} = {10^{-3} \times 4 \times 10^{6}} = 4000
  * \f]
  *
- * Per avere un overflow ogni 10ms si dovrà precaricare il registro di:
+ * Per avere un overflow ogni 1 ms si dovrà precaricare il registro di:
  *
  * \f[
- *   TIMER\_OFFSET = (2^{16} -1) - n = 6507,32
+ *   TIMER\_OFFSET = (2^{16} -1) - n = 61535
  * \f]
  */
-#define TIMER_OFFSET 65208
+#define TIMER_OFFSET 61535
 
 #define END_OF_MESSAGE 0x2a /**< Char che indica la fine del messaggio */
 //#define RESET_ON_UART_OVERFLOW /**< Resetta il micro sull'evento di overflow della seriale */
 #define REQUEST_NUMBER_OF_TRY 10 /**< Numero di tentativi prima di rinunciare */
 
-#define BATT_AN_CHANNEL 0 /**< Porta analogica dove è collegata la batteria */
-#define LVDT_AN_CHANNEL 1 /**< Porta analogica dove è collegato il sensore LVDT */
-#define TEMP_AN_CHANNEL 4 /**< Porta analogica dove è collegato il sensore di temperatura */
-#define BATT_ADC_TIMEOUT_HS 1000 /**< Tempo tra un'acquisizione e l'altra della batteria*/
-#define LED_UPDATE_HS 30000 /**< Ritardo nell'accensione del led di stato*/
-#define CONNECTION_TIMEOUT_HS 2000 /**< Tempo limite oltre il quale si entra in modalità ap*/
+#define BATT_AN_CHANNEL ADC_CH0 /**< Porta analogica dove è collegata la batteria */
+#define LVDT_AN_CHANNEL ADC_CH4 /**< Porta analogica dove è collegato il sensore LVDT */
+#define TEMP_AN_CHANNEL ADC_CH1 /**< Porta analogica dove è collegato il sensore di temperatura */
+#define BATT_ADC_TIMEOUT_MS 300000 /**< Tempo tra un'acquisizione e l'altra della batteria*/
+#define LED_UPDATE_MS 3600000 /**< Ritardo nell'accensione del led di stato*/
+#define CONNECTION_TIMEOUT_MS 20000 /**< Tempo limite oltre il quale si entra in modalità ap*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <timers.h>
 #include <adc.h>
-
-#ifdef LCD_WINSTAR
-#include "include/lcd.h"
-#endif
 
 #include "include/uart_interface.h"
 #include "include/winbond.h"
@@ -72,49 +65,42 @@
 #include <xc.h>
 #include "system/io_cfg.h"
 #include "spi.h"
-#include "flash.h"
+#include "EEP.h"
 
 /* C O N F I G ***************************************************************/
-#pragma config PLLDIV = 4  /**< Divide by 4 (16MHz oscillator input) */
-#pragma config DEBUG = OFF /**< Background debugger disabled; RB6 and RB7 configured
-                            as general purpose I/O pins*/
-#pragma config WDTEN = OFF /**< WDT disabled (control is placed on SWDTEN bit)*/
-#pragma config STVREN = OFF /**< Reset on stack overflow/underflow disabled */
-#pragma config XINST = OFF /**< Instruction se extension and Indexed Addressing
-                            mode disabled*/
+#pragma config RETEN = 0  /**< Vreg Sleep Enable bit (negate) */
+#pragma config INTOSCSEL = 0  /**< LF-INTOSCSEL Low-power Enable bit (negate) */
+#pragma config SOSCSEL = 2  /**< SOSC Power Selection and mode Configuration bits */
+#pragma config XINST = 0  /**< Extended Instruction Set */
+#pragma config FOSC = HS2  /**< Oscillator */
+#pragma config PLLCFG = 1  /**< PLL x4 Enable bit */
+#pragma config FCMEN = 0  /**< Fail-Safe Clock Monitor */
+#pragma config IESO = 0  /**< Internal External Oscillator Switch Over Mode */
+#pragma config PWRTEN = 1  /**< Power Up Timer (negate) */
+#pragma config BOREN = 0  /**< Brown Out Reset */
+#pragma config BORV = 3  /**< Brown Out Reset Voltage bits */
+#pragma config BORPWR = 0  /**< BORMV Power Level */
+#pragma config WDTEN = 0  /**< Watchdog Timer */
+#pragma config WDTPS = 0  /**< Watchdog Postscaler */
+#pragma config RTCOSC = 0  /**< RTCC Clock Select */
+#pragma config CCP2MX = 0  /**< CCP2 Mux */
+#pragma config MSSPMSK = 0  /**< MSSP address masking */
+#pragma config MCLRE = 1  /**< Master Clear Enable */
+#pragma config STVREN = 1  /**< Stack Overflow Reset */
+#pragma config BBSIZ = 0  /**< Boot Block Size */
 
-#pragma config CPUDIV = OSC1 /**< No CPU system clock divide */
-#pragma config CP0 = OFF /**< Program memory is not code-protected */
-
-#pragma config IESO = OFF /**< Two-Speed start-up disabled */
-#pragma config FOSC = HSPLL /**< HS oscillator, PLL enabled, HSPLL used by USB */
-#pragma config FCMEN = OFF /**< Fail-safe clock monitor disabled */
-
-#pragma config WDTPS = 1 /**< Watchdog timer postscaler */
-
-#pragma config MSSPMSK = 1 /**< 7-bit address mode enable RE6 and RE5 */
-#pragma config CCP2MX = 1 /**< ECCP2/P2A is multiplexed with RC1 */
 
 /* P R O T O T Y P E *********************************************************/
 void initialize_system(void);
-void user_timer_hs(void);
+void user_timer_ms(void);
 void message_load_uart(const char *buffer);
 int ap_mode(void);
+int download_configuration_ftp(void);
 int ping(void);
-void circular_buffer_save(void);
+void circular_buffer_save(long start_address);
 
 /* G L O B A L   V A R I A B L E *********************************************/
 time_t time_by_rn131 = 0; /**< Detiene i secondi trascorsi dall'epoc*/
-
-#ifdef LCD_WINSTAR
-/** Indica quando l'LCD può essere aggiornato.
- *
- * Update_lcd è impostato tramite l'interrupt generato dal timer1, dopo che sono
- * trascorsi TIMEOUT_UPDATE_LCD_HS centesimi di secondo. Viene azzerato dal main
- * dopo l'avvenuta scrittura sul display.
- */
-volatile int lcd_update = 0;
-#endif
 
 /** Indica quando è possibile terminare il programma.
  * 
@@ -141,7 +127,7 @@ volatile int rqst_update_flag = 0;
  */
 volatile int adc_update = 0;
 
-volatile int ap_mode_enter = 0;
+volatile int config_error = 0;
 
 /**
  * Canale adc che è stato campionato.
@@ -161,6 +147,11 @@ volatile int an_channel = -1;
  *
  */
 volatile int tcp_start_timer_flag = -1;
+
+/**
+ * Contatore per la lettura/scrittura seriale sulla eeprom
+ */
+unsigned int eeprom_addr_count = 0;
 
 union
 {
@@ -190,19 +181,19 @@ union
     {
       long value;
       unsigned char bytes[4];
-    } timeout_update_adc_temp_hs; /**< Periodo di acquisizione dall'adc per il sensore di temperatura */
+    } timeout_update_adc_temp_ms; /**< Periodo di acquisizione dall'adc per il sensore di temperatura */
 
     union
     {
       long value;
       unsigned char bytes[4];
-    } timeout_update_adc_lvdt_hs; /**< Periodo di acquisizione dall'adc per il sensore LVDT */
+    } timeout_update_adc_ext1_ms; /**< Periodo di acquisizione dall'adc per il sensore LVDT */
 
     union
     {
       long value;
       unsigned char bytes[4];
-    } timeout_data_eeprom_hs; /**< Periodo di attesa prima di inviare i dati letti dalle eeprom */
+    } timeout_data_eeprom_ms; /**< Periodo di attesa prima di inviare i dati letti dalle eeprom */
 
     union
     {
@@ -261,16 +252,6 @@ char buffer[UART2_BUFFER_SIZE_RX];/**< buffer globale d'appoggio sia in lettura 
  * 
  */
 volatile char communication_ready = 0;
-
-#ifdef LCD_WINSTAR
-char lcdlines[]=
-{ LCD_HOME_TO_1ST_LINE,
-  LCD_HOME_TO_2ND_LINE,
-  LCD_HOME_TO_3RD_LINE,
-  LCD_HOME_TO_4TH_LINE
-};/*!< Se usiamo l'LCD WINSTAR questo ha 4 linee da 16 caratteri per cui
-     rispetto all'LCD COG devo aggiungere un indirizzo di inizio linea in piu'*/
-#endif
 
 
 /**
@@ -360,47 +341,48 @@ void interrupt myIsr(void)
   // this function must be the last because can send in sleep the micro
   if(PIR1bits.TMR1IF && PIE1bits.TMR1IE)
   {
-#ifdef LCD_WINSTAR
-    static int lcd_timer = 0;
-#endif
     static int rqst_update_timer = 0;
-    static short long adc_timer_batt = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della batteria. */
+    static short long adc_timer_batt = BATT_ADC_TIMEOUT_MS; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della batteria. */
     static short long adc_timer_temp = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della temperatura. */
     static short long adc_timer_lvdt = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra dell'LVDT */
     static short long led_timer = 0; /**< tiene il tempo per il led di stato */
-    static int connection_timer = 0; /**< tiene il tempo per lo scadere del tentativo di connession */
+    static short long connection_timer = 0; /**< tiene il tempo per lo scadere del tentativo di connession */
 
     /*Quando rientro dallo sleep devo aspettare che il processore sia correttamente
      agganciato al clock. Per esserne sicuro testo il bit meno significativo di
      TMR1L: quando leggo il nuovo stato posso dire che il processore è pronto*/
-    asm("BTFSC TMR1L,0");
+    /*asm("BTFSC TMR1L,0");
     asm("BRA $-2");
     asm("BTFSS TMR1L,0");
-    asm("BRA $-2");
+    asm("BRA $-2");*/
 
     WriteTimer1(TIMER_OFFSET);
     PIR1bits.TMR1IF = 0;
-    
-    user_timer_hs();
+
+    user_timer_ms();
 
     if(rn131.ap_mode == 0)
     {
-      if((rn131.wakeup == 1) && (rn131.ready == 1) && (rn131.connected == 0) && (rn131.ap_mode == 0))
+      if((rn131.wakeup == 1) && (rn131.ready == 1) && 
+         (((rn131.time_set == 1) && (rn131.connected == 0)) || (rn131.time_set == 0))
+          )
       {
         connection_timer++;
-        if(connection_timer >= CONNECTION_TIMEOUT_HS)
+
+        if(connection_timer >= CONNECTION_TIMEOUT_MS)
         {
           connection_timer = 0;
-          ap_mode_enter = 1;
+          config_error = 1;
         }
       }
       else if(connection_timer != 0)
         connection_timer = 0;
 
       led_timer++;
-      if(led_timer >= LED_UPDATE_HS)
+      led_err = (led_timer >> 10);
+      if(led_timer >= LED_UPDATE_MS)
       {
-        if(led_timer < (LED_UPDATE_HS + 256))
+        if(led_timer < (LED_UPDATE_MS + 60000))
         {
           if(status_flags.bits.micro_reset_fault || status_flags.bits.spi_bus_collision)
             led_err = 1;
@@ -418,17 +400,10 @@ void interrupt myIsr(void)
           led_err = 0;
           led_no_err = 0;
           led_timer = 0;
+
+          circular_buffer_save(EEPROM_COUNT_PTR);
         }
       }
-#ifdef LCD_WINSTAR
-      lcd_timer++;
-
-      if(lcd_timer == TIMEOUT_UPDATE_LCD_HS)
-      {
-        lcd_update = 1;
-        lcd_timer = 0;
-      }
-#endif
 
     /**
      * Abilita nuova richiesta
@@ -447,7 +422,7 @@ void interrupt myIsr(void)
       else
         rqst_update_timer = 0;
 
-      if(rqst_update_timer == TIMEOUT_UPDATE_RQST_HS)
+      if(rqst_update_timer == TIMEOUT_UPDATE_RQST_MS)
       {
         rqst_update_timer = 0;
         rqst_update_flag = 1;
@@ -466,17 +441,17 @@ void interrupt myIsr(void)
         adc_timer_lvdt = 0;
       }
 
-      if(adc_timer_temp >= configuration.timeout_update_adc_temp_hs.value)
+      if(adc_timer_temp >= configuration.timeout_update_adc_temp_ms.value)
       {
         // Avvia acquisizione
         if((ADCON0bits.GO == 0) && (an_channel == -1))
         {
           adc_timer_temp = 0;
-          an_channel = 4;
-          SelChanConvADC(an_channel << 3);
+          an_channel = TEMP_AN_CHANNEL;
+          SelChanConvADC(an_channel);
         }
       }
-      else if(adc_timer_lvdt >= configuration.timeout_update_adc_lvdt_hs.value)
+      else if(adc_timer_lvdt >= configuration.timeout_update_adc_ext1_ms.value)
       {
         // Avvia acquisizione
         if((ADCON0bits.GO == 0) && (an_channel == -1))
@@ -484,34 +459,34 @@ void interrupt myIsr(void)
           // Il dispositivo ha bisogno di almeno 3 ms per tirare fuori un segnale valido.
           // Inoltre anche lo step-up interno ha bisogno di un certo tempo di assestamento.
           // 100 ms di attesa sono sufficienti per ottenere un segnale valido.
-          if(backligth_enable == 0)
+          if(ext_shut == 0)
           {
-            backligth_enable = 1;
-            adc_timer_lvdt = configuration.timeout_update_adc_lvdt_hs.value - 10;
+            ext_shut = 1;
+            adc_timer_lvdt = configuration.timeout_update_adc_ext1_ms.value - 100;
           }
           else
           {
             adc_timer_lvdt = 0;
-            an_channel = 1;
-            SelChanConvADC(an_channel << 3);
+            an_channel = LVDT_AN_CHANNEL;
+            SelChanConvADC(an_channel);
           }
         }
       }
-      else if(adc_timer_batt >= BATT_ADC_TIMEOUT_HS)
+      else if(adc_timer_batt >= BATT_ADC_TIMEOUT_MS)
       {
         // Avvia acquisizione
         if((ADCON0bits.GO == 0) && (an_channel == -1))
         {
-          if(adc_batt == 1)
+          if(adc_batt_enable == 1)
           {
-            adc_batt = 0;
-            adc_timer_batt = BATT_ADC_TIMEOUT_HS - 10;
+            adc_batt_enable = 0;
+            adc_timer_batt = BATT_ADC_TIMEOUT_MS - 10;
           }
           else
           {
             adc_timer_batt = 0;
-            an_channel = 0;
-            SelChanConvADC(an_channel << 3);
+            an_channel = BATT_AN_CHANNEL;
+            SelChanConvADC(an_channel);
           }
         }
       }
@@ -520,7 +495,7 @@ void interrupt myIsr(void)
       {
         tcp_start_timer_flag++;
 
-        if(tcp_start_timer_flag == configuration.timeout_data_eeprom_hs.value)
+        if(tcp_start_timer_flag == configuration.timeout_data_eeprom_ms.value)
           tcp_start_timer_flag = 0;
       }
     }
@@ -564,6 +539,7 @@ void interrupt myIsr(void)
  *
  *
  * @todo
+ * - implementare codice errore FTP timeout=2
  * - scrivere i codici di stato interno
  * - verificare che vada in sleep passati 40 secondi, anche quando si trova in modalità web server
  * - caricare il file di configurazione spin all'avvio
@@ -607,6 +583,7 @@ int main(void)
 
   unsigned int uart_empty_space = 0;
   unsigned char timer_config = 0x00;
+  unsigned char timer_config1 = 0x00;
   char uart_token[] = {'\n', '*'};
   unsigned short long eeprom_data_to_send; /**< numero di byte caricati dall'eeprom e pronti per essere inviati*/
   
@@ -618,7 +595,7 @@ int main(void)
 
   WDTCONbits.REGSLP = 1; // on-chip regulator enters low-power operation when device enters in Sleep mode
   OSCTUNEbits.PLLEN = 1;
-  OSCCONbits.IDLEN = 0;
+  OSCCONbits.IDLEN = 1;
   
   initialize_system();
 
@@ -652,10 +629,10 @@ int main(void)
   }
 
   /************ INIT GLOBAL ***********/
-  configuration.timeout_sleep_s.value = 60;
-  configuration.timeout_update_adc_temp_hs.value = 1000;
-  configuration.timeout_update_adc_lvdt_hs.value = 1000;
-  configuration.timeout_data_eeprom_hs.value = 1000;
+  configuration.timeout_sleep_s.value = 600;
+  configuration.timeout_update_adc_temp_ms.value = 300000;
+  configuration.timeout_update_adc_ext1_ms.value = 300000;
+  configuration.timeout_data_eeprom_ms.value = 10000;
   configuration.battery_warn_value.value = 3.2;
   configuration.battery_min_value.value = 3.0;
   configuration.category.value = 2;
@@ -665,40 +642,31 @@ int main(void)
   // clear adc interrupt and turn off adc if in case was on previously
   CloseADC();
 
-  /** refer to pag. 306 */
   OpenADC(ADC_FOSC_RC | ADC_RIGHT_JUST | ADC_2_TAD,
-          ADC_CH0 | ADC_INT_ON | ADC_REF_VREFPLUS_VSS,
-          ADC_0ANA);
-
-  // calibratura ADC
-  ADCON1bits.ADCAL = 1;
-  ConvertADC();
-  while(BusyADC());
-  ADCON1bits.ADCAL = 0;
+          ADC_CH1 | ADC_INT_ON,
+          ADC_NEG_CH0 | ADC_REF_VDD_INT_VREF_2 | ADC_REF_VDD_VSS);
 
   ADC_INT_ENABLE();
 
   /************ INIT TIMER *********/
-  timer_config = T1_16BIT_RW | T1_SOURCE_EXT | T1_PS_1_1 | T1_OSC1EN_ON
+  timer_config = T1_16BIT_RW | T1_SOURCE_FOSC_4 | T1_PS_1_4 | T1_OSC1EN_OFF
           | T1_SYNC_EXT_OFF | TIMER_INT_ON;
 
-  OpenTimer1(timer_config);
+  timer_config1 = TIMER_GATE_OFF;
+  
+  OpenTimer1(timer_config, timer_config1);
   WriteTimer1(TIMER_OFFSET);
-  /******* INIT LCD ********/
-#ifdef LCD_WINSTAR
-  Lcd_Init();
-#endif
 
   /******* INIT SERIAL COMM ********/
   uart2_open(9600);
-
+  
   /******* INIT SPI   ******************/
   CloseSPI2();
-  OpenSPI2(SPI_FOSC_4, MODE_11, SMPEND);
+  OpenSPI2(SPI_FOSC_64, MODE_11, SMPEND);
 
   INTCONbits.PEIE = 1;
   ei(); // enable all interrupt
-  
+
   /******* INIT DATA ********/
   rn131.wakeup = 0;
   rn131.ready = 0;
@@ -719,29 +687,33 @@ int main(void)
 
   memset(winbond.device_id, 0, sizeof(winbond.device_id));
 
-  // leggo dalla program memory i valori dei puntatori circolari. Nel caso fosse
+  // leggo dalla EEPROM i valori dei puntatori circolari. Nel caso fosse
   // la prima esecuzione del programma dopo la programmazione, allora inizializzo
   // i valori a zero. Questa condizione è verificata quando tutti i valori risultano
   // uguali al valore limite
-  ReadFlash((UINT32)EEPROM_COUNT_PTR, (UINT16)sizeof(configuration.bytes), configuration.bytes);
+  //ReadFlash((UINT32)EEPROM_COUNT_PTR, (UINT16)sizeof(configuration.bytes), configuration.bytes);
+  for(eeprom_addr_count = 0; eeprom_addr_count < sizeof(configuration.bytes); eeprom_addr_count++)
+    configuration.bytes[eeprom_addr_count] = Read_b_eep(EEPROM_COUNT_PTR + eeprom_addr_count);
 
   if((configuration.eeprom_ptr_send.value == 0xFFFFFFFF) && (configuration.eeprom_ptr_wr.value == 0xFFFFFFFF) && (configuration.eeprom_data_count.value == 0xFFFFFFFF))
   {
     configuration.eeprom_ptr_send.value = 0;
     configuration.eeprom_ptr_wr.value = 0;
     configuration.eeprom_data_count.value = 0;
-    configuration.timeout_update_adc_temp_hs.value = 1000;
-    configuration.timeout_update_adc_lvdt_hs.value = 1000;
-    configuration.timeout_data_eeprom_hs.value = 1000;
+    configuration.timeout_update_adc_temp_ms.value = 300000;
+    configuration.timeout_update_adc_ext1_ms.value = 300000;
+    configuration.timeout_data_eeprom_ms.value = 10000;
     configuration.battery_warn_value.value = 3.2;
     configuration.battery_min_value.value = 3.0;
     configuration.category.value = 2;
-    configuration.timeout_sleep_s.value = 60;
+    configuration.timeout_sleep_s.value = 600;
   }
   
   eeprom_at_work = 0;
 
   status_flags.byte = 0;
+  
+  __delay_ms(5);
   
   /* MANUFACTURER ID Winbond: 0xEF
    * DEVICE ID W25Q64BV:      0x16
@@ -773,9 +745,6 @@ int main(void)
       else if((rn131.cmd_mode_rqst > 1) && (rn131.cmd_mode == 0) && (uart2_status.buffer_tx_empty == 1))
       {
         message_load_uart("$$$");
-
-        if(rn131.ap_mode)
-          led_no_err = 1;
         
         rn131.cmd_mode_rqst++;
         if(rn131.cmd_mode_rqst == REQUEST_NUMBER_OF_TRY)
@@ -944,7 +913,7 @@ int main(void)
               sprintf(buffer, "%sx:", rn131.mac);
 
             sprintf(ascii_buffer, "sleep=%ld,adc=%ld,adc_temp=%ld,category=%d,data_delay=%ld,batt_warn=%1.2f,batt_min=%1.2f,",
-                    configuration.timeout_sleep_s.value, configuration.timeout_update_adc_lvdt_hs.value, configuration.timeout_update_adc_temp_hs.value, configuration.category.value, configuration.timeout_data_eeprom_hs.value,
+                    configuration.timeout_sleep_s.value, configuration.timeout_update_adc_ext1_ms.value, configuration.timeout_update_adc_temp_ms.value, configuration.category.value, configuration.timeout_data_eeprom_ms.value,
                     configuration.battery_warn_value.value, configuration.battery_min_value.value);
 
             strcat(buffer, ascii_buffer);
@@ -956,7 +925,7 @@ int main(void)
           }
           else if((strncmp(cmd_http_parse, "set_config", 10) == 0) && (rn131.cmd_mode == 0))
           {
-            circular_buffer_save();
+            circular_buffer_save(EEPROM_COUNT_PTR);
 
             cmd_http_start = cmd_http_mark + 1;
             cmd_http_mark = strchr(cmd_http_start, '\r');
@@ -992,7 +961,7 @@ int main(void)
             timeout_update_hs_temp = atol(cmd_http_parse + 8);
 
             if(timeout_update_hs_temp > 0)
-              configuration.timeout_update_adc_lvdt_hs.value = timeout_update_hs_temp;
+              configuration.timeout_update_adc_ext1_ms.value = timeout_update_hs_temp;
 
             cmd_http_start = cmd_http_mark + 1;
             cmd_http_mark = strchr(cmd_http_start, '\r');
@@ -1004,7 +973,7 @@ int main(void)
             timeout_update_hs_temp = atol(cmd_http_parse + 8);
 
             if(timeout_update_hs_temp > 0)
-              configuration.timeout_update_adc_temp_hs.value = timeout_update_hs_temp;
+              configuration.timeout_update_adc_temp_ms.value = timeout_update_hs_temp;
 
             cmd_http_start = cmd_http_mark + 1;
             cmd_http_mark = strchr(cmd_http_start, '\r');
@@ -1016,7 +985,7 @@ int main(void)
             timeout_update_hs_temp = atol(cmd_http_parse + 15);
 
             if(timeout_update_hs_temp > 0)
-              configuration.timeout_data_eeprom_hs.value = timeout_update_hs_temp;
+              configuration.timeout_data_eeprom_ms.value = timeout_update_hs_temp;
 
             cmd_http_start = cmd_http_mark + 1;
             cmd_http_mark = strchr(cmd_http_start, '\r');
@@ -1092,56 +1061,6 @@ int main(void)
       rqst_update_flag = 0;
     }
     
-#ifdef LCD_WINSTAR 
-    if(lcd_update == 1)
-    {
-      Lcd_CLS();
-
-      switch(uart2_error_handle())
-      {
-        case BUFFER_RX_OVERFLOW:
-#ifdef RESET_ON_UART_OVERFLOW
-          RESET();
-#else
-         sprintf(buffer, "!Overflow!!\n");
-         Lcd_Printf(buffer);
-#endif
-          break;
-
-        case FRAME_ERROR:
-          sprintf(buffer, "Frame Error!\n");
-          Lcd_Printf(buffer);
-          break;
-
-        default:
-          if(rn131.ready == 0)
-          {
-            sprintf(buffer, "Searching. . .\n");
-            Lcd_Printf(buffer);
-          }
-          else if(rn131.connected == 0)
-          {
-            sprintf(buffer, "Connecting. . .\n");
-            Lcd_Printf(buffer);
-          }
-          else if(rn131.time_set == 0)
-          {
-            //time_struct = localtime(&time_by_rn131);
-            sprintf(buffer, "Getting time. . .\n", asctime(localtime(&time_by_rn131)));
-            Lcd_Printf(buffer);
-          }
-          else
-          {
-            //time_struct = localtime(&time_by_rn131);
-            sprintf(buffer, "%s\n", asctime(localtime(&time_by_rn131)));
-            Lcd_Printf(buffer);
-          }
-          break;
-      }
-
-      lcd_update = 0;
-    }
-#else
     switch(uart2_error_handle())
     {
       case BUFFER_RX_OVERFLOW:
@@ -1149,7 +1068,6 @@ int main(void)
         RESET();
 #else
         status_flags.bits.uart_overflow = 1;
-#endif
         break;
 
       case BUFFER_RX_MICRO_OVERFLOW:
@@ -1194,7 +1112,6 @@ int main(void)
             
             continue;
           }
-
 
           // Controllo che riceva il messaggio CMD dopo una richiesta d'ingresso
           // in modalità command
@@ -1248,7 +1165,7 @@ int main(void)
                     rn131.tcp_open = 0;
                     
                     if(rn131.cmd_http[0] == 0)
-                      tcp_start_timer_flag = configuration.timeout_data_eeprom_hs.value - 2;
+                      tcp_start_timer_flag = configuration.timeout_data_eeprom_ms.value - 20;
                       //tcp_start_timer_flag = 0;
                     else
                     {
@@ -1316,7 +1233,12 @@ int main(void)
     {
       if(rn131.time_set == 0)
       {
-        if(rn131.cmd_mode == 0)
+        if(config_error == 1)
+        {
+          if(download_configuration_ftp())
+            config_error = 0;
+        }
+        else if(rn131.cmd_mode == 0)
         {
           if(rn131.cmd_mode_rqst == 0)
           {
@@ -1328,6 +1250,10 @@ int main(void)
         {
           if(rn131.time_set_rqst == 0)
           {
+            // Approfitto dell'inizializzazione dell'orologio per impostare anche il tempo di risveglio
+            // del modulo, nel caso fosse nuovo.
+            sprintf(buffer, "set sys wake %ld\rsave\r", configuration.timeout_sleep_s.value);
+            message_load_uart(buffer);
             message_load_uart("time\r");
 
             rn131.time_set_rqst = 1;
@@ -1423,10 +1349,10 @@ int main(void)
     }
     else
     {
-      if(ap_mode_enter == 1)
+      if(config_error == 1)
       {
         if(ap_mode())
-          ap_mode_enter = 0;
+          config_error = 0;
       }
     }
 
@@ -1437,7 +1363,7 @@ int main(void)
       switch(an_channel)
       {
         case BATT_AN_CHANNEL:
-          adc_batt = 1;
+          adc_batt_enable = 1;
           
           adc_V = (sample.sample_struct.adc_value_int * ADC_REFERENCE) * BATTERY_PART / (2 << (ADC_RESOLUTION_BIT - 1));
 
@@ -1446,7 +1372,7 @@ int main(void)
 
           if(adc_V <= configuration.battery_min_value.value)
           {
-            circular_buffer_save();
+            circular_buffer_save(EEPROM_COUNT_PTR);
 
             // disabilito tutte le periferiche
             di();
@@ -1457,15 +1383,7 @@ int main(void)
 
             // disalimento tutto
             alim_3_3V_enable = 0;
-            adc_batt = 1;
-
-            #if (defined(LCD_WINSTAR) || defined(LCD))
-              backligth_enable = 0;
-
-              contrast_cs_tris = INPUT_PIN;
-              contrast_ck_tris = INPUT_PIN;
-              contrast_ud_tris = INPUT_PIN;
-            #endif
+            adc_batt_enable = 1;
 
             // buona notte
             OSCCONbits.IDLEN = 0;
@@ -1495,7 +1413,7 @@ int main(void)
           break;
 
         case LVDT_AN_CHANNEL:
-          backligth_enable = 0;
+          ext_shut = 0;
           if(sample.sample_struct.adc_value_int != 0)
           {
             sample.sample_struct.category = configuration.category.value;
@@ -1519,10 +1437,14 @@ int main(void)
         default:
           break;
       }
-      
-      an_channel = -1;
+
       adc_update = 0;
-      SLEEP();
+      if(an_channel > -1)
+      {
+        an_channel = -1;
+
+        SLEEP();
+      }
     }
   }
   
@@ -1549,30 +1471,30 @@ void initialize_system(void)
   PORTF = 0;
   PORTG = 0;
 
-  csn_tris = OUTPUT_PIN;
-  csn = 0;
-
   // init batt analog pin
-  adc_batt_tris = OUTPUT_PIN;
-  adc_batt = 1;
-  
-  // init usb
-  UCONbits.USBEN = 0;
-  usb_d_min_tris = INPUT_PIN;
-  usb_d_min_tris = INPUT_PIN;
+  adc_batt_enable_tris = OUTPUT_PIN;
+  adc_batt_enable = 1;
   
   // init adc
-  battery_ref_tris = INPUT_PIN;
-  battery_ref_digital = 0;
+  // set all port to digital
+  ANCON0 = 0;
+  ANCON1 = 0;
+  ANCON2 = 0;
   
   battery_an_tris = INPUT_PIN;
-  battery_an_digital = 0;
+  battery_an_analog = 1;
 
   temp_an_tris = INPUT_PIN;
-  temp_an_digital = 0;
+  temp_an_analog = 1;
 
-  lvdt_an_tris = INPUT_PIN;
-  lvdt_an_digital = 0;
+  ext1_an_tris = INPUT_PIN;
+  ext1_an_analog = 1;
+  
+  ext2_an_tris = INPUT_PIN;
+  ext2_an_analog = 1;
+  
+  ext_shut_an_tris = OUTPUT_PIN;
+  ext_shut_an_analog = 0;
   
   // init led
   led_err_tris = OUTPUT_PIN;
@@ -1586,88 +1508,54 @@ void initialize_system(void)
   rn131_int_flag = 0;
   rn131_int_enable = 1;
 
-  // enable 5V
-  alim_5V_enable_tris = OUTPUT_PIN;
-  alim_5V_enable = 0;
-
   // enable 3.3V
   alim_3_3V_enable_tris = OUTPUT_PIN;
-  alim_3_3V_enable = 1;
+  alim_3_3V_enable =  1;
   
-  // init lcd
-  backligth_enable_tris = OUTPUT_PIN;
-#if (defined(LCD_WINSTAR) || defined(LCD))
-  backligth_enable = 1;
-
-  contrast_cs_tris = OUTPUT_PIN;
-  contrast_ck_tris = OUTPUT_PIN;
-  contrast_ud_tris = OUTPUT_PIN;
-
-  contrast_cs = 1;
-  contrast_ck = 1;
-  contrast_ud = 1;
-
-  NOP();
-  contrast_ud = 0;
-  contrast_cs = 0;
-
-  for(i = 0; i < 128; i++)
-  {
-    contrast_ck = 0;
-    NOP();
-    NOP();
-    contrast_ck = 1;
-  }
-
-  contrast_cs = 1;
-  contrast_ud = 1;
-#else
-  backligth_enable = 0;
-
-  contrast_cs_tris = INPUT_PIN;
-  contrast_ck_tris = INPUT_PIN;
-  contrast_ud_tris = INPUT_PIN;
-#endif
-
   // init serial
+#ifdef CONFIGURE_MODE
+  uart2_tx_tris = INPUT_PIN;
+  SLEEP();
+#else
   uart2_tx_tris = OUTPUT_PIN;
+#endif
+  
   uart2_rx_tris = INPUT_PIN;
 
   // init rn131
   rn131_rts_tris = INPUT_PIN;
 
   // init MCP73811
-  MCP73811_ce_tris = INPUT_PIN;
-  MCP73811_prg_tris = OUTPUT_PIN;
-  MCP73811_prg = 1;
+  charger_ce_tris = INPUT_PIN;
+  charger_prg_tris = OUTPUT_PIN;
+  charger_prg = 1;
 
-  // init v_usb
-  v_usb_tris = INPUT_PIN;
-  
   // init spi
   spi_sck_tris = OUTPUT_PIN;
   spi_sdo_tris = OUTPUT_PIN;
   spi_sdi_tris = INPUT_PIN;
-  spi_cs1_tris = OUTPUT_PIN;
-  spi_cs2_tris = OUTPUT_PIN;
+  spi_cs_tris = OUTPUT_PIN;
 
-  spi_cs1 = 1;
-  spi_cs2 = 1;
+  spi_cs = 1;
 
+#ifndef CONFIGURE_MODE
   uart2_init(0);
+#endif
+
+
 }
 
 /**
  * @todo aggiornare anche il giorno della settimana
  */
-void user_timer_hs(void)
+void user_timer_ms(void)
 {
-  static unsigned int hsec = 0;
-  hsec++;
+  static unsigned int msec = 0;
+  msec++;
 
-  if(hsec >= 100)
+  if(msec >= 1000)
   {
-    hsec=0;
+    msec=0;
 
     time_by_rn131++;
   }
@@ -1719,6 +1607,45 @@ int ping(void)
   return 0;
 }
 
+int download_configuration_ftp(void)
+{
+  static int config_req_sent = 0;
+
+  if(rn131.cmd_mode == 0)
+  {
+    if(rn131.cmd_mode_rqst == 0)
+    {
+      message_load_uart("$$$");
+
+      rn131.cmd_mode_rqst = 1;
+    }
+  }
+  else if(config_req_sent == 0)
+  {
+    message_load_uart("set dns backup babaracus.no-ip.org\r");
+    message_load_uart("set ftp user pi\r");
+    message_load_uart("set ftp pass raspberry\r");
+    message_load_uart("set ftp remote 21\r");
+    message_load_uart("set ftp dir /var/www\r");
+    message_load_uart("ftp update wifly_config.cfg\r");
+
+    config_req_sent = 1;
+  }
+  else
+  {
+    if(rn131_parse_message(buffer, "FTP OK"))
+    {
+      message_load_uart("load spin_c\r");
+      message_load_uart("save\r");
+
+      rn131.cmd_mode_reboot_rqst = 1;
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 int ap_mode(void)
 {
   if(rn131.cmd_mode == 0)
@@ -1732,8 +1659,6 @@ int ap_mode(void)
   }
   else
   {
-    //message_load_uart("factory RESET\r");
-    //message_load_uart("save\r");
     message_load_uart("run web_app\r");
 
     // annullo ogni eventuale richiesta inoltrata
@@ -1745,8 +1670,8 @@ int ap_mode(void)
   return 0;
 }
 
-void circular_buffer_save(void)
+void circular_buffer_save(long start_address)
 {
-  EraseFlash((UINT32)0x7000,(UINT32)0x73FF);
-  WriteBytesFlash((UINT32)EEPROM_COUNT_PTR, (UINT16)sizeof(configuration.bytes), configuration.bytes);
+  for(eeprom_addr_count = 0; eeprom_addr_count < sizeof(configuration.bytes); eeprom_addr_count++)
+    Write_b_eep(start_address + eeprom_addr_count, configuration.bytes[eeprom_addr_count]);
 }

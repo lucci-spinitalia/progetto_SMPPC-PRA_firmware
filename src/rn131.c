@@ -233,5 +233,4 @@ void rn131_sleep(void)
   rn131.cmd_mode = 0;
   rn131.ready = 0;
   rn131.wakeup = 0;
-
 }
