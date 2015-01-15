@@ -29,15 +29,19 @@
 /** I N C L U D E S ********************************/
 
 /** O S C I L L A T O R  ***************************/
-#define FOSC_MHZ	64000000
+#define FOSC_MHZ	16000000
 
 #ifndef _XTAL_FREQ
-#define _XTAL_FREQ 64000000
+#define _XTAL_FREQ 16000000
 #endif
  
 /** T R I S         ********************************/
 #define INPUT_PIN 1
 #define OUTPUT_PIN 0
+
+/** I 2 C           ********************************/
+#define i2c_sck_tris TRISCbits.TRISC3
+#define i2c_sda_tris TRISCbits.TRISC4
 
 /** S P I           ********************************/
 #define spi_cs_tris TRISDbits.TRISD3

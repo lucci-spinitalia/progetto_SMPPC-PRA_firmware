@@ -85,6 +85,8 @@ int winbond_data_read(unsigned char *data, unsigned short long data_bytes, unsig
 unsigned long winbond_empty_space(void);
 int winbond_data_load(unsigned char *data, int data_bytes);
 unsigned short long winbond_data_send(unsigned char *data, int max_data_bytes);
+int winbond_powerdown(void);
+int winbond_release_powerdown(void);
 
 
 #ifdef	__cplusplus

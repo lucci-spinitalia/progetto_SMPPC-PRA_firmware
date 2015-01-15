@@ -1,4 +1,6 @@
-﻿/** \mainpage Manuale utente
+﻿Descrivere la modalità di configurazione del modulo, spiegando anche la storia del server ftp
+
+/** \mainpage Manuale utente
  *
  * \section intro_sec Introduzione
  *

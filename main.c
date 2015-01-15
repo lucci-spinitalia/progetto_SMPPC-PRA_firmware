@@ -22,7 +22,7 @@
 #define SLEEP_PTR 0x1C
 #define CATEGORY_PTR 0x20
 
-#define TIMEOUT_UPDATE_RQST_MS 500 /**< Periodo di invio delle richieste in centesimi di secondo*/
+#define TIMEOUT_UPDATE_RQST_MS 1000 /**< Periodo di invio delle richieste in centesimi di secondo*/
 
 /**
  * Offset per il Timer1.
@@ -41,7 +41,7 @@
  *   TIMER\_OFFSET = (2^{16} -1) - n = 61535
  * \f]
  */
-#define TIMER_OFFSET 61535
+#define TIMER_OFFSET 64535
 
 #define END_OF_MESSAGE 0x2a /**< Char che indica la fine del messaggio */
 //#define RESET_ON_UART_OVERFLOW /**< Resetta il micro sull'evento di overflow della seriale */
@@ -50,9 +50,27 @@
 #define BATT_AN_CHANNEL ADC_CH0 /**< Porta analogica dove è collegata la batteria */
 #define LVDT_AN_CHANNEL ADC_CH4 /**< Porta analogica dove è collegato il sensore LVDT */
 #define TEMP_AN_CHANNEL ADC_CH1 /**< Porta analogica dove è collegato il sensore di temperatura */
-#define BATT_ADC_TIMEOUT_MS 300000 /**< Tempo tra un'acquisizione e l'altra della batteria*/
-#define LED_UPDATE_MS 3600000 /**< Ritardo nell'accensione del led di stato*/
+#define BATT_ADC_TIMEOUT_S 30 /**< Tempo tra un'acquisizione e l'altra della batteria*/
+#define LED_UPDATE_S 3600 /**< Ritardo nell'accensione del led di stato*/
 #define CONNECTION_TIMEOUT_MS 20000 /**< Tempo limite oltre il quale si entra in modalità ap*/
+
+#define STC3100_ADDR 0x70 /**< Indirizzo del battery gauge */
+#define STC3100_MODE 0x00 /**< Registro MODE */
+#define STC3100_CTRL 0x01 /**< Registro di controllo e di stato */
+#define STC3100_CHARGE_LOW 0x02 /**< LSB per la carica della batteria */
+#define STC3100_CHARGE_HIGH 0x03 /**< MSB per la carica della batteria */
+#define STC3100_COUNTER_LOW 0x04 /**< LSB per il numero di conversioni */
+#define STC3100_COUNTER_HIGH 0x05 /**< MSB per il numero di conversioni */
+#define STC3100_CURRENT_LOW 0x06  /**< LSB per il valore di corrente */
+#define STC3100_CURRENT_HIGH 0x07 /**< MSB per il valore di corrente */
+#define STC3100_VOLTAGE_LOW 0x08 /**< LSB per il valore di tensione della batteria */
+#define STC3100_VOLTAGE_HIGH 0x09 /**< MSB per il valore di tensione della batteria */
+#define STC3100_TEMPERATURE_LOW 0x0A /**< LSB per il valore di temperatura */
+#define STC3100_TEMPERATURE_HIGH 0x0B /**< MSB per il valore di temperatura */
+#define STC3100_ID0 0x18 /**< Registro per l'ID */
+
+#define RTCC_ERROR_S 0.038
+#define STC3100_RESISTOR_MOHM 33.0
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,18 +80,22 @@
 #include "include/uart_interface.h"
 #include "include/winbond.h"
 #include "include/rn131.h"
+#include "include/stc3100.h"
 #include <xc.h>
 #include "system/io_cfg.h"
+#include "i2c.h"
 #include "spi.h"
 #include "EEP.h"
+#include "rtcc.h"
+
 
 /* C O N F I G ***************************************************************/
 #pragma config RETEN = 0  /**< Vreg Sleep Enable bit (negate) */
-#pragma config INTOSCSEL = 0  /**< LF-INTOSCSEL Low-power Enable bit (negate) */
+#pragma config INTOSCSEL = 1  /**< LF-INTOSCSEL Low-power Enable bit (negate) */
 #pragma config SOSCSEL = 2  /**< SOSC Power Selection and mode Configuration bits */
 #pragma config XINST = 0  /**< Extended Instruction Set */
-#pragma config FOSC = HS2  /**< Oscillator */
-#pragma config PLLCFG = 1  /**< PLL x4 Enable bit */
+#pragma config FOSC = INTIO2  /**< Oscillator */
+#pragma config PLLCFG = 0  /**< PLL x4 Enable bit */
 #pragma config FCMEN = 0  /**< Fail-Safe Clock Monitor */
 #pragma config IESO = 0  /**< Internal External Oscillator Switch Over Mode */
 #pragma config PWRTEN = 1  /**< Power Up Timer (negate) */
@@ -92,15 +114,20 @@
 
 /* P R O T O T Y P E *********************************************************/
 void initialize_system(void);
-void user_timer_ms(void);
+//void user_timer_ms(void);
+void update_date(float error_sec);
 void message_load_uart(const char *buffer);
 int ap_mode(void);
 int download_configuration_ftp(void);
 int ping(void);
 void circular_buffer_save(long start_address);
+int BCDToDecimal(char bcdByte);
+char DecimalToBCD(int decimalByte);
+void adc_open(int an_channel);
 
 /* G L O B A L   V A R I A B L E *********************************************/
 time_t time_by_rn131 = 0; /**< Detiene i secondi trascorsi dall'epoc*/
+struct tm *date_structure;  /**< Detiene l'ora ed il giorno in formato parametrico s*/
 
 /** Indica quando è possibile terminare il programma.
  * 
@@ -148,6 +175,9 @@ volatile int an_channel = -1;
  */
 volatile int tcp_start_timer_flag = -1;
 
+unsigned char timer_config = 0x00; /**< Registro di configurazione 1 per il Timer*/
+unsigned char timer_config1 = 0x00; /**< Registro di configurazione 2 per il Timer*/
+
 /**
  * Contatore per la lettura/scrittura seriale sulla eeprom
  */
@@ -193,7 +223,7 @@ union
     {
       long value;
       unsigned char bytes[4];
-    } timeout_data_eeprom_ms; /**< Periodo di attesa prima di inviare i dati letti dalle eeprom */
+    } timeout_data_eeprom_s; /**< Periodo di attesa prima di inviare i dati letti dalle eeprom */
 
     union
     {
@@ -237,6 +267,7 @@ union status_flags_struct
     unsigned micro_reset_fault :1; /**< reset inaspettato */
     unsigned uart_overflow :1; /**< uart overflow */
     unsigned eeprom_fail :1; /**< eeprom fault */
+    unsigned rttc_update_fail :1; /**< rtcc fault*/
   } bits;
 } status_flags;
 
@@ -292,6 +323,10 @@ union sample_union sample;
  */
 void interrupt myIsr(void)
 {
+  static short long adc_timer_temp = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della temperatura. */
+  static short long adc_timer_lvdt = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra dell'LVDT */
+  static short long adc_timer_batt = BATT_ADC_TIMEOUT_S; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della batteria. */
+
   if(UART2_INTERRUPT_RX > 0)
     uart2_isr();
 
@@ -323,6 +358,13 @@ void interrupt myIsr(void)
       communication_ready = 0;
 
       rn131.wakeup = 1;
+
+      OSCCONbits.SCS = 3;
+      
+      uart2_tx_tris = OUTPUT_PIN;
+      uart2_rx_tris = INPUT_PIN;
+      uart2_open(9600);
+
     }
     else
     {
@@ -331,58 +373,74 @@ void interrupt myIsr(void)
     }
   }
 
-  if(PIR1bits.ADIF && PIE1bits.ADIE)
+  /**
+   * Studio consumo:
+   *   - all off but 3.3V, stc3100 stand-by -> (PARZIALE 1)0.07mA  -> (MODULO) 0.07mA
+   *   - adc idle -> 0  (PARZIALE 2)0.07 -> (MODULO) 0.07mA
+   *   - uart idle -> (PARZIALE 3)0.32mA -> (MODULO)0.25mA
+   *   - i2c idle -> (PARZIALE 3)0.32mA -> (MODULO)0.32mA
+   *   - stc3100 start -> (PARZIALE 3)0.41mA -> (MODULO)0.09mA
+   *
+   *   - idlen = 0, 3_3VSW off, timer1 off, uart off, flash off;  -> (PARZIALE 3)1.23mA -> (MODULO)?mA
+   *   - idlen = 0, 3_3VSW off, timer1 off, uart off, flash off, spi off;  -> (PARZIALE 3)0.8mA -> (MODULO SPI)0.43mA
+   *   - idlen = 0, 3_3VSW on, timer1 off, uart off, flash off, spi off, i2c off;  -> (PARZIALE 3)0.60mA
+   *   - idlen = 0, 3_3VSW off, timer1 off, uart off, flash off, spi off, i2c off;  -> (PARZIALE 4)0.14mA
+   *
+   *   - idlen = 1, 3_3VSW off, timer1 off, uart off, flash off, spi off;  -> (PARZIALE 3)2.74mA -> (MODULO)?mA
+   *   - idlen = 1; alim_3_3V_enable = 0; -> 
+   */
+  if(PIR3bits.RTCCIF && PIE3bits.RTCCIE)
   {
-    adc_update = 1;
-
-    PIR1bits.ADIF = 0;
-  }
-
-  // this function must be the last because can send in sleep the micro
-  if(PIR1bits.TMR1IF && PIE1bits.TMR1IE)
-  {
-    static int rqst_update_timer = 0;
-    static short long adc_timer_batt = BATT_ADC_TIMEOUT_MS; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della batteria. */
-    static short long adc_timer_temp = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della temperatura. */
-    static short long adc_timer_lvdt = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra dell'LVDT */
     static short long led_timer = 0; /**< tiene il tempo per il led di stato */
-    static short long connection_timer = 0; /**< tiene il tempo per lo scadere del tentativo di connession */
-
-    /*Quando rientro dallo sleep devo aspettare che il processore sia correttamente
-     agganciato al clock. Per esserne sicuro testo il bit meno significativo di
-     TMR1L: quando leggo il nuovo stato posso dire che il processore è pronto*/
-    /*asm("BTFSC TMR1L,0");
-    asm("BRA $-2");
-    asm("BTFSS TMR1L,0");
-    asm("BRA $-2");*/
-
-    WriteTimer1(TIMER_OFFSET);
-    PIR1bits.TMR1IF = 0;
-
-    user_timer_ms();
+    static int rqst_update_timer = 0;
+    
+    PIR3bits.RTCCIF = 0;
+    //led_err = ~led_err;
 
     if(rn131.ap_mode == 0)
     {
-      if((rn131.wakeup == 1) && (rn131.ready == 1) && 
-         (((rn131.time_set == 1) && (rn131.connected == 0)) || (rn131.time_set == 0))
-          )
+      if((rn131.time_set == 1))
       {
-        connection_timer++;
-
-        if(connection_timer >= CONNECTION_TIMEOUT_MS)
+        if(rn131.wakeup == 0)
         {
-          connection_timer = 0;
-          config_error = 1;
+          if(TXSTA2bits.TXEN)
+          {
+            uart2_close();
+            uart2_tx_tris = INPUT_PIN;
+            uart2_rx_tris = INPUT_PIN;
+          }
+        }
+        else
+        {
+          /**
+           * Abilita nuova richiesta
+           *
+           * Se c'è stata una richiesta non soddisfatta dopo ::TIMEOUT_UPDATE_RQST_HS
+           * allora si abilita il rinvio. In questo caso il firmware non deve andare
+           * in sleep.
+           *
+           * \attention Ogni flag di richiesta che si aggiunge a ::rn131_struct deve
+           * essere aggiunta anche nella condizione per incrementare il timer
+           * ::rqst_update_timer
+           */
+          if(rn131.cmd_mode_exit_rqst || rn131.cmd_mode_reboot_rqst || rn131.cmd_mode_rqst ||
+             rn131.time_set_rqst || rn131.cmd_mode_sleep_rqst || rn131.cmd_http_rqst)
+            rqst_update_timer++;
+          else
+            rqst_update_timer = 0;
+
+          if(rqst_update_timer * 1000 == TIMEOUT_UPDATE_RQST_MS)
+          {
+            rqst_update_timer = 0;
+            rqst_update_flag = 1;
+          }
         }
       }
-      else if(connection_timer != 0)
-        connection_timer = 0;
 
       led_timer++;
-      led_err = (led_timer >> 10);
-      if(led_timer >= LED_UPDATE_MS)
+      if(led_timer >= LED_UPDATE_S)
       {
-        if(led_timer < (LED_UPDATE_MS + 60000))
+        if(led_timer < (LED_UPDATE_S + 60))
         {
           if(status_flags.bits.micro_reset_fault || status_flags.bits.spi_bus_collision)
             led_err = 1;
@@ -405,34 +463,61 @@ void interrupt myIsr(void)
         }
       }
 
-    /**
-     * Abilita nuova richiesta
-     *
-     * Se c'è stata una richiesta non soddisfatta dopo ::TIMEOUT_UPDATE_RQST_HS
-     * allora si abilita il rinvio. In questo caso il firmware non deve andare
-     * in sleep.
-     *
-     * \attention Ogni flag di richiesta che si aggiunge a ::rn131_struct deve
-     * essere aggiunta anche nella condizione per incrementare il timer
-     * ::rqst_update_timer
-     */
-      if(rn131.cmd_mode_exit_rqst || rn131.cmd_mode_reboot_rqst || rn131.cmd_mode_rqst ||
-         rn131.time_set_rqst || rn131.cmd_mode_sleep_rqst || rn131.cmd_http_rqst)
-        rqst_update_timer++;
-      else
-        rqst_update_timer = 0;
-
-      if(rqst_update_timer == TIMEOUT_UPDATE_RQST_MS)
+      if(tcp_start_timer_flag > 0)
       {
-        rqst_update_timer = 0;
-        rqst_update_flag = 1;
+        tcp_start_timer_flag++;
+
+        if(tcp_start_timer_flag == configuration.timeout_data_eeprom_s.value)
+          tcp_start_timer_flag = 0;
       }
 
       if((rn131.time_set == 1) && (rn131.wakeup == 0))
       {
         adc_timer_batt++;
-        adc_timer_temp++;
-        adc_timer_lvdt++;
+        adc_timer_temp += 1000;
+        adc_timer_lvdt += 1000;
+
+        if(adc_timer_batt >= BATT_ADC_TIMEOUT_S)
+        {
+          if((ADCON0bits.GO == 0) && (an_channel == -1))
+          {
+            adc_update = 1;
+            adc_timer_batt = 0;
+            an_channel = BATT_AN_CHANNEL;
+          }
+        }
+        else if(adc_timer_temp >= configuration.timeout_update_adc_temp_ms.value)
+        {
+          // Avvia acquisizione
+          if((ADCON0bits.GO == 0) && (an_channel == -1))
+          {
+            adc_timer_temp = 0;
+            an_channel = TEMP_AN_CHANNEL;
+            update_date(RTCC_ERROR_S);
+            SelChanConvADC(an_channel);
+          }
+        }
+        
+        if(adc_timer_lvdt >= configuration.timeout_update_adc_ext1_ms.value)
+        {
+          if(!T1CONbits.TMR1ON)
+          {
+            OSCCONbits.IDLEN = 1;
+            WriteTimer1(TIMER_OFFSET);
+            OpenTimer1(timer_config, timer_config1);
+          }
+        }
+        else 
+        {
+          if(T1CONbits.TMR1ON == 1)
+            CloseTimer1();
+
+          // Se ho finito anche di campionare, allora posso tornare in sleep mode
+          if(an_channel == -1)
+          {
+            OSCCONbits.IDLEN = 0;
+          }
+        }
       }
       else
       {
@@ -440,18 +525,78 @@ void interrupt myIsr(void)
         adc_timer_temp = 0;
         adc_timer_lvdt = 0;
       }
+    }
+  }
+  
+  if(PIR1bits.ADIF && PIE1bits.ADIE)
+  {
+    adc_update = 1;
 
-      if(adc_timer_temp >= configuration.timeout_update_adc_temp_ms.value)
+    PIR1bits.ADIF = 0;
+  }
+
+  // this function must be the last because can send in sleep the micro
+  if(PIR1bits.TMR1IF && PIE1bits.TMR1IE)
+  {
+    static int rqst_update_timer = 0;
+    static short long connection_timer = 0; /**< tiene il tempo per lo scadere del tentativo di connession */
+
+    WriteTimer1(TIMER_OFFSET);
+    PIR1bits.TMR1IF = 0;
+
+    if(rn131.ap_mode == 0)
+    {
+      if((rn131.wakeup == 1) && (rn131.ready == 1) && 
+         (((rn131.time_set == 1) && (rn131.connected == 0)) || (rn131.time_set == 0))
+          )
       {
-        // Avvia acquisizione
-        if((ADCON0bits.GO == 0) && (an_channel == -1))
+        connection_timer++;
+
+        if(connection_timer >= CONNECTION_TIMEOUT_MS)
         {
-          adc_timer_temp = 0;
-          an_channel = TEMP_AN_CHANNEL;
-          SelChanConvADC(an_channel);
+          connection_timer = 0;
+          config_error = 1;
         }
       }
-      else if(adc_timer_lvdt >= configuration.timeout_update_adc_ext1_ms.value)
+      else if(connection_timer != 0)
+        connection_timer = 0;
+
+      /**
+       * Abilita nuova richiesta
+       *
+       * Se c'è stata una richiesta non soddisfatta dopo ::TIMEOUT_UPDATE_RQST_HS
+       * allora si abilita il rinvio. In questo caso il firmware non deve andare
+       * in sleep.
+       *
+       * \attention Ogni flag di richiesta che si aggiunge a ::rn131_struct deve
+       * essere aggiunta anche nella condizione per incrementare il timer
+       * ::rqst_update_timer
+       */
+      if((rn131.wakeup == 1) || (rn131.time_set == 0))
+      {
+        if(rn131.cmd_mode_exit_rqst || rn131.cmd_mode_reboot_rqst || rn131.cmd_mode_rqst ||
+           rn131.time_set_rqst || rn131.cmd_mode_sleep_rqst || rn131.cmd_http_rqst)
+          rqst_update_timer++;
+        else
+          rqst_update_timer = 0;
+
+        if(rqst_update_timer == TIMEOUT_UPDATE_RQST_MS)
+        {
+          rqst_update_timer = 0;
+          rqst_update_flag = 1;
+        }
+      }
+
+      if((rn131.time_set == 1) && (rn131.wakeup == 0))
+      {
+        adc_timer_lvdt++;
+      }
+      else
+      {
+        adc_timer_lvdt = 0;
+      }
+
+      if(adc_timer_lvdt >= configuration.timeout_update_adc_ext1_ms.value)
       {
         // Avvia acquisizione
         if((ADCON0bits.GO == 0) && (an_channel == -1))
@@ -468,35 +613,10 @@ void interrupt myIsr(void)
           {
             adc_timer_lvdt = 0;
             an_channel = LVDT_AN_CHANNEL;
+            update_date(RTCC_ERROR_S);
             SelChanConvADC(an_channel);
           }
         }
-      }
-      else if(adc_timer_batt >= BATT_ADC_TIMEOUT_MS)
-      {
-        // Avvia acquisizione
-        if((ADCON0bits.GO == 0) && (an_channel == -1))
-        {
-          if(adc_batt_enable == 1)
-          {
-            adc_batt_enable = 0;
-            adc_timer_batt = BATT_ADC_TIMEOUT_MS - 10;
-          }
-          else
-          {
-            adc_timer_batt = 0;
-            an_channel = BATT_AN_CHANNEL;
-            SelChanConvADC(an_channel);
-          }
-        }
-      }
-
-      if(tcp_start_timer_flag > 0)
-      {
-        tcp_start_timer_flag++;
-
-        if(tcp_start_timer_flag == configuration.timeout_data_eeprom_ms.value)
-          tcp_start_timer_flag = 0;
       }
     }
   }
@@ -539,6 +659,11 @@ void interrupt myIsr(void)
  *
  *
  * @todo
+ * - testare se il battery gauge misura bene
+ * - calibrare il modulo stc3100
+ * - portare il sistema a 31 kHz quando il modulo wifly è spento
+ * - scrivere sulla eeprom solo dopo 32 byte, così da ridurre il consumo di corrente
+ * - usare lvd feature per capire quando la batteria è scarica
  * - implementare codice errore FTP timeout=2
  * - scrivere i codici di stato interno
  * - verificare che vada in sleep passati 40 secondi, anche quando si trova in modalità web server
@@ -582,21 +707,22 @@ int main(void)
   char cmd_http_parse[32];
 
   unsigned int uart_empty_space = 0;
-  unsigned char timer_config = 0x00;
-  unsigned char timer_config1 = 0x00;
   char uart_token[] = {'\n', '*'};
   unsigned short long eeprom_data_to_send; /**< numero di byte caricati dall'eeprom e pronti per essere inviati*/
   
   //unsigned int adc_result = 0; /**< valore del canale analogico*/
-  float adc_V = 0; /**< valore del canale analogico convertito in V*/
   float battery_value_temp = 0; /**< Valore di apporggio per impostare il livello della batteria da remoto*/
 
   int windbond_return_value;
 
   WDTCONbits.REGSLP = 1; // on-chip regulator enters low-power operation when device enters in Sleep mode
-  OSCTUNEbits.PLLEN = 1;
-  OSCCONbits.IDLEN = 1;
-  
+  OSCTUNEbits.INTSRC = 0;
+  OSCCON2bits.MFIOSEL = 0;
+  OSCCONbits.IRCF = 7;
+  OSCTUNEbits.PLLEN = 0;
+  OSCCONbits.IDLEN = 0;
+  OSCCONbits.SCS = 3;
+
   initialize_system();
 
   // power on reset
@@ -629,24 +755,66 @@ int main(void)
   }
 
   /************ INIT GLOBAL ***********/
-  configuration.timeout_sleep_s.value = 600;
-  configuration.timeout_update_adc_temp_ms.value = 300000;
-  configuration.timeout_update_adc_ext1_ms.value = 300000;
-  configuration.timeout_data_eeprom_ms.value = 10000;
+  configuration.timeout_sleep_s.value = 120;
+  configuration.timeout_update_adc_temp_ms.value = 30000;
+  configuration.timeout_update_adc_ext1_ms.value = 30000;
+  configuration.timeout_data_eeprom_s.value = 10;
   configuration.battery_warn_value.value = 3.2;
   configuration.battery_min_value.value = 3.0;
   configuration.category.value = 2;
   windbond_return_value = 0;
 
+  // Disable all peripheral
+  PMD0 = 0b11101000;
+  PMD1 = 0b11111101;
+  PMD2 = 0xff;
+  PMD3 = 0xff;
+
   /************ INIT ADC ***********/
   // clear adc interrupt and turn off adc if in case was on previously
   CloseADC();
-
   OpenADC(ADC_FOSC_RC | ADC_RIGHT_JUST | ADC_2_TAD,
-          ADC_CH1 | ADC_INT_ON,
+          ADC_CH0 | ADC_INT_ON,
           ADC_NEG_CH0 | ADC_REF_VDD_INT_VREF_2 | ADC_REF_VDD_VSS);
+  
+  /******* INIT SERIAL COMM ********/
+  uart1_close();
+  uart2_open(9600);
 
-  ADC_INT_ENABLE();
+  /******* INIT I2C   ******************/
+  CloseI2C1();
+  OpenI2C1(MASTER, SLEW_OFF);
+
+  // 400kHz Baud Clock
+  SSPADD = FOSC_MHZ / (4 * 300000) - 1;
+
+  // Read ID
+  stc3100_get(STC3100_ADDR, STC3100_ID0, 8, stc3100_id);
+
+  // Azzera l'accumulatore ed il contatore
+  stc3100_write(STC3100_ADDR, STC3100_CTRL, 0x02);
+
+  // Avvia il modulo per la calibrazione
+  //stc3100_write(STC3100_ADDR, STC3100_MODE, 0x18);
+  // Avvia il modulo con risoluzione a 14-bit
+  stc3100_write(STC3100_ADDR, STC3100_MODE, 0x10);
+
+  CloseI2C1();
+  
+  /******* INIT RTCC   ******************/
+  rtccTimeDate rtcc_time_date;
+
+  /******* INIT SPI   ******************/
+  // init spi
+  spi_sck_tris = OUTPUT_PIN;
+  spi_sdo_tris = OUTPUT_PIN;
+  spi_sdi_tris = INPUT_PIN;
+  spi_cs_tris = OUTPUT_PIN;
+
+  spi_cs = 1;
+
+  CloseSPI2();
+  OpenSPI2(SPI_FOSC_16, MODE_11, SMPEND);
 
   /************ INIT TIMER *********/
   timer_config = T1_16BIT_RW | T1_SOURCE_FOSC_4 | T1_PS_1_4 | T1_OSC1EN_OFF
@@ -657,16 +825,22 @@ int main(void)
   OpenTimer1(timer_config, timer_config1);
   WriteTimer1(TIMER_OFFSET);
 
-  /******* INIT SERIAL COMM ********/
-  uart2_open(9600);
+  /************ INTERRUPT *********/
   
-  /******* INIT SPI   ******************/
-  CloseSPI2();
-  OpenSPI2(SPI_FOSC_64, MODE_11, SMPEND);
+  /********* RTS INTERRUPT ********/
+  rn131_int_edge = 1;
+  rn131_int_flag = 0;
+  rn131_int_enable = 1;
 
+  /********* RTCC INTERRUPT ********/
+  PIE3bits.RTCCIE = 1;
+
+  /********* ADC INTERRUPT ********/
+  ADC_INT_ENABLE();
+  
   INTCONbits.PEIE = 1;
   ei(); // enable all interrupt
-
+  
   /******* INIT DATA ********/
   rn131.wakeup = 0;
   rn131.ready = 0;
@@ -685,6 +859,9 @@ int main(void)
   
   int rn131_message_length = 0;
 
+  alim_3_3V_enable_tris = OUTPUT_PIN;
+  alim_3_3V_enable =  1;
+  
   memset(winbond.device_id, 0, sizeof(winbond.device_id));
 
   // leggo dalla EEPROM i valori dei puntatori circolari. Nel caso fosse
@@ -700,13 +877,13 @@ int main(void)
     configuration.eeprom_ptr_send.value = 0;
     configuration.eeprom_ptr_wr.value = 0;
     configuration.eeprom_data_count.value = 0;
-    configuration.timeout_update_adc_temp_ms.value = 300000;
-    configuration.timeout_update_adc_ext1_ms.value = 300000;
-    configuration.timeout_data_eeprom_ms.value = 10000;
+    configuration.timeout_update_adc_temp_ms.value = 30000;
+    configuration.timeout_update_adc_ext1_ms.value = 30000;
+    configuration.timeout_data_eeprom_s.value = 10;
     configuration.battery_warn_value.value = 3.2;
     configuration.battery_min_value.value = 3.0;
     configuration.category.value = 2;
-    configuration.timeout_sleep_s.value = 600;
+    configuration.timeout_sleep_s.value = 120;
   }
   
   eeprom_at_work = 0;
@@ -721,7 +898,7 @@ int main(void)
   if(winbond_identification(winbond.device_id) < 0)
     status_flags.bits.spi_bus_collision = 1;
 
-  if(winbond.device_id[0] > 0)
+  if(winbond.device_id[0] != 0xff)
   {
     if(winbond_status_register_read(&winbond.status_register_1.word, 1) < 0)
       status_flags.bits.spi_bus_collision = 1;
@@ -731,6 +908,15 @@ int main(void)
   }
   else
     status_flags.bits.eeprom_fail = 1;
+
+  if(SSP2CON1bits.SSPEN == 1)
+  {
+    CloseSPI2();
+    spi_sck_tris = INPUT_PIN;
+    spi_sdo_tris = INPUT_PIN;
+    spi_sdi_tris = INPUT_PIN;
+    spi_cs_tris = INPUT_PIN;
+  }
   
   while(!done)
   {
@@ -913,7 +1099,7 @@ int main(void)
               sprintf(buffer, "%sx:", rn131.mac);
 
             sprintf(ascii_buffer, "sleep=%ld,adc=%ld,adc_temp=%ld,category=%d,data_delay=%ld,batt_warn=%1.2f,batt_min=%1.2f,",
-                    configuration.timeout_sleep_s.value, configuration.timeout_update_adc_ext1_ms.value, configuration.timeout_update_adc_temp_ms.value, configuration.category.value, configuration.timeout_data_eeprom_ms.value,
+                    configuration.timeout_sleep_s.value, configuration.timeout_update_adc_ext1_ms.value, configuration.timeout_update_adc_temp_ms.value, configuration.category.value, configuration.timeout_data_eeprom_s.value,
                     configuration.battery_warn_value.value, configuration.battery_min_value.value);
 
             strcat(buffer, ascii_buffer);
@@ -939,7 +1125,7 @@ int main(void)
             if(buffer[0] == 0)
               sprintf(buffer, "%sx:", rn131.mac);
 
-            sprintf(ascii_buffer, "batt=%1.2f,", adc_V);
+            sprintf(ascii_buffer, "batt=%1.2f,", stc3100_voltage_value_mV);
             strcat(buffer, ascii_buffer);
 
             cmd_http_start = cmd_http_mark + 1;
@@ -985,7 +1171,7 @@ int main(void)
             timeout_update_hs_temp = atol(cmd_http_parse + 15);
 
             if(timeout_update_hs_temp > 0)
-              configuration.timeout_data_eeprom_ms.value = timeout_update_hs_temp;
+              configuration.timeout_data_eeprom_s.value = timeout_update_hs_temp;
 
             cmd_http_start = cmd_http_mark + 1;
             cmd_http_mark = strchr(cmd_http_start, '\r');
@@ -1101,14 +1287,6 @@ int main(void)
           if(rn131_connection_init(buffer, rn131_message_length) == 1)
           {
             memset(buffer, 0, rn131_message_length);
-            /*if(rn131.ap_mode == 1)
-            {
-              rn131_sleep();
-              communication_ready = 0;
-              tcp_start_timer_flag = -1;
-              
-              SLEEP();
-            }*/
             
             continue;
           }
@@ -1165,7 +1343,7 @@ int main(void)
                     rn131.tcp_open = 0;
                     
                     if(rn131.cmd_http[0] == 0)
-                      tcp_start_timer_flag = configuration.timeout_data_eeprom_ms.value - 20;
+                      tcp_start_timer_flag = configuration.timeout_data_eeprom_s.value - 1;
                       //tcp_start_timer_flag = 0;
                     else
                     {
@@ -1202,6 +1380,54 @@ int main(void)
                   {
                     if(rn131.time_set == 1)
                     {
+                      date_structure = gmtime(&time_by_rn131);
+
+                      // date_structure indica l'anno partendo dal 1900, mentre rtcc_date lo indica partendo
+                      // dal 2000
+                      rtcc_time_date.f.year = DecimalToBCD(date_structure->tm_year - 100);
+                      rtcc_time_date.f.mon = DecimalToBCD(date_structure->tm_mon + 1);
+                      rtcc_time_date.f.mday = DecimalToBCD(date_structure->tm_mday);
+                      rtcc_time_date.f.wday = DecimalToBCD(date_structure->tm_wday);
+                      rtcc_time_date.f.hour = DecimalToBCD(date_structure->tm_hour);
+                      rtcc_time_date.f.min = DecimalToBCD(date_structure->tm_min);
+                      rtcc_time_date.f.sec = DecimalToBCD(date_structure->tm_sec);
+
+                      RtccWrOn(); //write enable the rtcc registers
+
+                      if(!RtccWriteTimeDate(&rtcc_time_date , 1))
+                        status_flags.bits.rttc_update_fail = 1;
+
+                      rtcc_time_date.f.year = DecimalToBCD(date_structure->tm_year - 100);
+                      rtcc_time_date.f.mon = DecimalToBCD(date_structure->tm_mon + 1);
+                      rtcc_time_date.f.mday = DecimalToBCD(date_structure->tm_mday);
+                      rtcc_time_date.f.wday = DecimalToBCD(date_structure->tm_wday);
+                      rtcc_time_date.f.hour = DecimalToBCD(date_structure->tm_hour);
+                      rtcc_time_date.f.min = DecimalToBCD(date_structure->tm_min);
+                      rtcc_time_date.f.sec = DecimalToBCD(date_structure->tm_sec);
+
+                      ALRMCFGbits.CHIME = 1;
+                      ALRMCFGbits.AMASK = 1;
+
+                      if(!RtccWriteAlrmTimeDate(&rtcc_time_date))
+                        status_flags.bits.rttc_update_fail = 1;
+                      
+                      if(status_flags.bits.rttc_update_fail != 1)
+                      {
+                        PADCFG1bits.RTSECSEL = 2;
+                        // Il clock interno è di 31kHz, invece dei 32758 Hz attesi.
+                        // Quindi bisogna compensare come descritto nell'equazione 18-1
+                        // del datasheet. Però non è possibile compensare così tanto, in quanto
+                        // il registro di autocompensazione è da soli 8 bit. Con il valore massimo
+                        // arrivo ad una frequenza di 31500. L'errore commesso è di 0.038 secondi al secondo,
+                        // quindi in un'ora commetterò un errore pari a 136.8 secondi all'ora.
+                        //RTCCAL = 0x00;
+                        mRtccOn();
+                        mRtccClearAlrmPtr();
+                        mRtccAlrmEnable();
+                      }
+
+                      mRtccWrOff();
+                      
                       rn131.time_set_rqst = 0;
 
                       // It need to be rebooted otherwise the web server will kick off
@@ -1293,9 +1519,19 @@ int main(void)
           // web server. In questo modo il modulo wifi ha il tempo di compiere tutte le operazioni di cui ha bisogno
           // senza perdere caratteri dalla seriale.
           tcp_start_timer_flag = -1;
-
+          
           if(eeprom_data_count > 0)
           {
+            if(SSP2CON1bits.SSPEN == 0)
+            {
+              spi_sck_tris = OUTPUT_PIN;
+              spi_sdo_tris = OUTPUT_PIN;
+              spi_sdi_tris = INPUT_PIN;
+              spi_cs_tris = OUTPUT_PIN;
+
+              OpenSPI2(SPI_FOSC_16, MODE_11, SMPEND);
+            }
+
             // Voglio convertire i dati esadecimali in stringhe ascii: visto che ogni
             // byte è rappresentato da 2 caratteri, ho bisogno del doppio dello spazio
             // nel buffer di trasmissione. Inoltre voglio inserire il MAC address
@@ -1319,8 +1555,11 @@ int main(void)
               strcat(ascii_buffer,  rn131.mac);
               for(i = 0; i < eeprom_data_to_send; i++)
               {
-                sprintf(ascii_hex, "%02x", buffer[i]);
-                strcat(ascii_buffer,  &ascii_hex);
+                /*ascii_hex[0] = buffer[i] >> 4;
+                ascii_hex[1] = buffer[i] & 0x0f;
+                ascii_hex[2] = '\0';*/
+                sprintf(ascii_hex, "%.02x", buffer[i]);
+                strcat(ascii_buffer,  ascii_hex);
               }
 
               strcat(ascii_buffer, end_of_message);
@@ -1341,6 +1580,15 @@ int main(void)
               // resetto il buffer, così che i valori vengano appesi partendo dall'inizio
               ascii_buffer[0] = '\0';
             }
+
+            if(SSP2CON1bits.SSPEN == 1)
+            {
+              CloseSPI2();
+              spi_sck_tris = INPUT_PIN;
+              spi_sdo_tris = INPUT_PIN;
+              spi_sdi_tris = INPUT_PIN;
+              spi_cs_tris = INPUT_PIN;
+            }
           }
           else
             rn131.cmd_mode_sleep_rqst = 1;
@@ -1356,21 +1604,47 @@ int main(void)
       }
     }
 
-    if((rn131.time_set == 1) && (adc_update == 1))
+    if((rn131.time_set == 1) && (adc_update == 1) && (rn131.wakeup == 0))
     {
-      sample.sample_struct.adc_value_int = ReadADC();
+      if((an_channel > -1) && (SSP2CON1bits.SSPEN == 0))
+      {
+        spi_sck_tris = OUTPUT_PIN;
+        spi_sdo_tris = OUTPUT_PIN;
+        spi_sdi_tris = INPUT_PIN;
+        spi_cs_tris = OUTPUT_PIN;
+
+        OpenSPI2(SPI_FOSC_16, MODE_11, SMPEND);
+      }
 
       switch(an_channel)
       {
         case BATT_AN_CHANNEL:
-          adc_batt_enable = 1;
-          
-          adc_V = (sample.sample_struct.adc_value_int * ADC_REFERENCE) * BATTERY_PART / (2 << (ADC_RESOLUTION_BIT - 1));
+          OpenI2C1(MASTER, SLEW_OFF);
 
-          if(adc_V <= configuration.battery_warn_value.value)
+          // Leggo lo stato della batteria
+          // Coulomb counter reading
+          /*stc3100_get(STC3100_ADDR, STC3100_CHARGE_LOW, 4, stc3100_charge_state.bytes);
+          stc3100_soc_mAh = 6.70 * (float)(stc3100_charge_state.reg.charge.integer / STC3100_RESISTOR_MOHM);*/
+
+          // Battery current reading
+          /*stc3100_get(STC3100_ADDR, STC3100_CURRENT_LOW, 2, stc3100_current.bytes);
+          if((stc3100_current.integer & 0x2000) > 0)
+            stc3100_current.integer |= 0xE000;
+
+          stc3100_current_value_mA = 11.77 * (float)stc3100_current.integer / STC3100_RESISTOR_MOHM;*/
+
+          // Battery voltage reading
+          stc3100_get(STC3100_ADDR, STC3100_VOLTAGE_LOW, 2, stc3100_voltage.bytes);
+
+          if((stc3100_voltage.integer & 0x0800) > 0)
+            stc3100_voltage.integer |= 0xF000;
+
+          stc3100_voltage_value_mV = 2.44 * stc3100_voltage.integer;
+
+          if((stc3100_voltage_value_mV / 1000) <= configuration.battery_warn_value.value)
             status_flags.bits.battery_warning = 1;
 
-          if(adc_V <= configuration.battery_min_value.value)
+          if((stc3100_voltage_value_mV / 1000) <= configuration.battery_min_value.value)
           {
             circular_buffer_save(EEPROM_COUNT_PTR);
 
@@ -1379,7 +1653,17 @@ int main(void)
             CloseTimer1();
             CloseADC();
             ADC_INT_DISABLE();
+
+            // Disabilito il modulo STC3100
+            OpenI2C1(MASTER, SLEW_OFF);
+            stc3100_write(STC3100_ADDR, STC3100_MODE, 0x00);
+            CloseI2C1();
+
             CloseSPI2();
+            spi_sck_tris = INPUT_PIN;
+            spi_sdo_tris = INPUT_PIN;
+            spi_sdi_tris = INPUT_PIN;
+            spi_cs_tris = INPUT_PIN;
 
             // disalimento tutto
             alim_3_3V_enable = 0;
@@ -1389,9 +1673,12 @@ int main(void)
             OSCCONbits.IDLEN = 0;
             SLEEP();
           }
+
+          CloseI2C1();
           break;
 
         case TEMP_AN_CHANNEL:
+          sample.sample_struct.adc_value_int = ReadADC();
           if(sample.sample_struct.adc_value_int != 0)
           {
             sample.sample_struct.category = 1;
@@ -1399,7 +1686,7 @@ int main(void)
             sample.sample_struct.state = status_flags.byte;
 
             windbond_return_value = winbond_data_load(sample.sample_array, sizeof(sample));
-            
+
             if(windbond_return_value == 0)
             {
               configuration.eeprom_ptr_wr.value = eeprom_ptr_wr;
@@ -1414,6 +1701,7 @@ int main(void)
 
         case LVDT_AN_CHANNEL:
           ext_shut = 0;
+          sample.sample_struct.adc_value_int = ReadADC();
           if(sample.sample_struct.adc_value_int != 0)
           {
             sample.sample_struct.category = configuration.category.value;
@@ -1439,16 +1727,24 @@ int main(void)
       }
 
       adc_update = 0;
+     
       if(an_channel > -1)
       {
+        if(SSP2CON1bits.SSPEN == 1)
+        {
+          CloseSPI2();
+          spi_sck_tris = INPUT_PIN;
+          spi_sdo_tris = INPUT_PIN;
+          spi_sdi_tris = INPUT_PIN;
+          spi_cs_tris = INPUT_PIN;
+        }
+        
         an_channel = -1;
 
         SLEEP();
       }
     }
   }
-  
-  CloseTimer1();
 
   return(EXIT_SUCCESS);
 }
@@ -1477,8 +1773,8 @@ void initialize_system(void)
   
   // init adc
   // set all port to digital
-  ANCON0 = 0;
-  ANCON1 = 0;
+  ANCON0 = 0xff;
+  ANCON1 = 0b00001110;
   ANCON2 = 0;
   
   battery_an_tris = INPUT_PIN;
@@ -1502,15 +1798,9 @@ void initialize_system(void)
 
   led_no_err_tris = OUTPUT_PIN;
   led_no_err = 0;
-  
-  /********* INIT RTS INTERRUPT ********/
-  rn131_int_edge = 1;
-  rn131_int_flag = 0;
-  rn131_int_enable = 1;
 
   // enable 3.3V
-  alim_3_3V_enable_tris = OUTPUT_PIN;
-  alim_3_3V_enable =  1;
+  alim_3_3V_enable_tris = INPUT_PIN;
   
   // init serial
 #ifdef CONFIGURE_MODE
@@ -1528,15 +1818,11 @@ void initialize_system(void)
   // init MCP73811
   charger_ce_tris = INPUT_PIN;
   charger_prg_tris = OUTPUT_PIN;
-  charger_prg = 1;
+  charger_prg = 0; // questo pin consuma molto perchè c'è un pull-down attaccato
 
-  // init spi
-  spi_sck_tris = OUTPUT_PIN;
-  spi_sdo_tris = OUTPUT_PIN;
-  spi_sdi_tris = INPUT_PIN;
-  spi_cs_tris = OUTPUT_PIN;
-
-  spi_cs = 1;
+  // init I2C
+  i2c_sck_tris = INPUT_PIN;
+  i2c_sda_tris = INPUT_PIN;
 
 #ifndef CONFIGURE_MODE
   uart2_init(0);
@@ -1548,7 +1834,7 @@ void initialize_system(void)
 /**
  * @todo aggiornare anche il giorno della settimana
  */
-void user_timer_ms(void)
+/*void user_timer_ms(void)
 {
   static unsigned int msec = 0;
   msec++;
@@ -1559,6 +1845,44 @@ void user_timer_ms(void)
 
     time_by_rn131++;
   }
+}*/
+
+void update_date(float error_sec)
+{
+  rtccTimeDate rtcc_time_date;
+
+  struct tm date_structure;
+  static time_t time_by_rn131_start = 0;
+  if(time_by_rn131_start == 0)
+    time_by_rn131_start = time_by_rn131;
+  
+  RtccReadTimeDate(&rtcc_time_date);
+
+  date_structure.tm_year = BCDToDecimal(rtcc_time_date.f.year) + 100;
+  date_structure.tm_mon = BCDToDecimal(rtcc_time_date.f.mon) - 1;
+  date_structure.tm_mday = BCDToDecimal(rtcc_time_date.f.mday);
+  date_structure.tm_wday = BCDToDecimal(rtcc_time_date.f.wday);
+  date_structure.tm_hour = BCDToDecimal(rtcc_time_date.f.hour);
+  date_structure.tm_min = BCDToDecimal(rtcc_time_date.f.min);
+  date_structure.tm_sec = BCDToDecimal(rtcc_time_date.f.sec);
+
+  time_by_rn131 = mktime(&date_structure);
+
+  // ho bisogno di compensare l'errore commesso dal rtc dovuto ad un clock diverso
+  // da quello atteso. Siccome la frequenza è più piccola di quella prevista, un secondo
+  // durerà di meno, commettendo un errore in eccesso sulla data. Per questo devo
+  // sottrarre l'errore moltiplicato per i secondi passati
+  time_by_rn131 -= (unsigned long)((time_by_rn131 - time_by_rn131_start) * error_sec);
+}
+
+int BCDToDecimal(char bcdByte)
+{
+  return (((bcdByte & 0xF0) >> 4) * 10) + (bcdByte & 0x0F);
+}
+
+char DecimalToBCD(int decimalByte)
+{
+  return (((decimalByte / 10) << 4) | (decimalByte % 10));
 }
 
 void message_load_uart(const char *message)

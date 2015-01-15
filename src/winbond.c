@@ -65,6 +65,57 @@ int winbond_identification(unsigned char *device_id)
 }
 
 /**
+ * Imposta la memoria in modalità power-down.
+ *
+ * L'ingresso in questa modalità porta ad un consumo di corrente pari a 1/10 di
+ * quella di standby.
+ *
+ * @return 0: successo -1: fallimento
+ * @remark Una volta entrati in questa modalità, l'unico comando accettato
+ * è "Release from Power Down".
+ */
+int winbond_powerdown(void)
+{
+  // enable chip
+  spi_cs = 0;
+
+  // send "Power-down" instruction (B9h)
+  if(WriteSPI2(0xb9) == -1)
+  {
+    spi_cs = 1;
+    return -1;
+  }
+
+  __delay_us(3);
+  spi_cs = 1;
+
+  return 0;
+}
+
+/**
+ * Ripristina il dispositivo in modalità normale partendo dal powerdown.
+ *
+ * @return 0: successo -1: fallimento
+ */
+int winbond_release_powerdown(void)
+{
+  // enable chip
+  spi_cs = 0;
+
+  // send "Power-down" instruction (B9h)
+  if(WriteSPI2(0xab) == -1)
+  {
+    spi_cs = 1;
+    return -1;
+  }
+
+  __delay_us(3);
+  spi_cs = 1;
+
+  return 0;
+}
+
+/**
  * Invia il messaggio "Write Enable" (codice 0x06) all'eeprom
  *
  * @return 0: successo;  -1: fallimento
@@ -617,7 +668,6 @@ int winbond_data_load(unsigned char *data, int data_bytes)
 
   return 0;
 }
-
 
 /**
  * Legge i dati dalla eeprom e li segna come inviati.
