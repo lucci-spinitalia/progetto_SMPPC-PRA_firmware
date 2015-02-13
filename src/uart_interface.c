@@ -28,6 +28,7 @@
 #include "../include/uart_interface.h"
 #include "../system/io_cfg.h"	// here is defined the tx and rx pins
 #include <stdio.h>
+#include <usart.h>
 
 /** L O C A L  V A R I A B L E S  ******************/
 struct uart_status uart1_status;	// uart's status flag
@@ -540,14 +541,15 @@ unsigned char uart1_buffer_rx_load(void)
       return 0;
   }
 
+  chTemp = Read1USART();
+  
   // When overflow error accured, there's two word to read into usart buffers
   // Before claer and enable CREN I have to read these two words by polling
   // RCxIF
-  if(RCSTA1bits.OERR)	// Overflow error
+  if(USART1_Status.OVERRUN_ERROR == 1)	// Overflow error
   {
     uart1_status.buffer_rx_micro_overflow = 1;
 
-    chTemp = Read1USART();
     Nop();
     Nop();
     chTemp = Read1USART();
@@ -559,14 +561,11 @@ unsigned char uart1_buffer_rx_load(void)
 
   if(!uart1_status.buffer_rx_full)
   {
-    if(RCSTA1bits.FERR)	// Frame error
+    if(USART1_Status.FRAME_ERROR == 1)	// Frame error
     {
       uart1_status.buffer_rx_error_frame = 1;
-      chTemp = Read1USART();
       return 0;
     }
-
-    chTemp = Read1USART();
 
     // if I'm in rs485 mode and I sent something then I wont read it from
     // buffer (no loopback)
@@ -590,7 +589,10 @@ unsigned char uart1_buffer_rx_load(void)
       uart1_buffer_rx_wr_ptr = 0;
   }
   else
+  {
+    uart1_status.buffer_rx_overflow = 1;
     return 0;
+  }
 
   return 1;
 }
@@ -612,17 +614,18 @@ unsigned char uart2_buffer_rx_load(void)
 {
   unsigned char chTemp;	// temporary variable for receiver
   
-  if((UART2_INTERRUPT_RX == 0) && (!PIR3bits.RC2IF)) // if there's no data return
+  if((UART2_INTERRUPT_RX == 0) && (PIR3bits.RC2IF == 0)) // if there's no data return
     return 0;
 
+  chTemp = Read2USART();
+  
   // When overflow error accured, there's two word to read into usart buffers
   // Before claer and enable CREN I have to read these two words by polling
   // RCxIF
-  if(RCSTA2bits.OERR)	// Overflow error
+  if(USART2_Status.OVERRUN_ERROR == 1)	// Overflow error
   {
     uart2_status.buffer_rx_micro_overflow = 1;
 
-    chTemp = Read2USART();
     Nop();
     Nop();
     chTemp = Read2USART();
@@ -634,14 +637,11 @@ unsigned char uart2_buffer_rx_load(void)
 
   if(!uart2_status.buffer_rx_full)
   {
-    if(RCSTA2bits.FERR)	// Frame error
+    if(USART2_Status.FRAME_ERROR == 1)	// Frame error
     {
-      chTemp = Read2USART();
       uart2_status.buffer_rx_error_frame = 1;
       return 0;
     }
-
-    chTemp = Read2USART();
 
     // if I'm in rs485 mode and I sent something then I wont read it from
     // buffer (no loopback)
@@ -892,7 +892,6 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
   char *token_ptr[10];
   char *token_winner = NULL;
   char *null_character = NULL;
-  //int null_check_index = 0;
   int token_count = 0;
   static int bookmark = 0;
 
@@ -1167,23 +1166,26 @@ void uart1_isr(void)
 *			  that USART can receive further data.
 * Notes				: -
 **************************************************/
-void uart2_isr(void)
+int uart2_isr(void)
 {
   int interrupt_enable_rx = PIE3bits.RC2IE;
   int interrupt_enable_tx = PIE3bits.TX2IE;
 
-  if(interrupt_enable_rx)
+  /*if(interrupt_enable_rx)
     PIE3bits.RC2IE = 0;
 
   if(interrupt_enable_tx)
-    PIE3bits.TX2IE = 0;
+    PIE3bits.TX2IE = 0;*/
   
   // For the transmitter
 
   if(UART2_INTERRUPT_TX)
   {
     if(PIR3bits.TX2IF && interrupt_enable_tx)
+    {
       uart2_buffer_send();
+      return 1;
+    }
   }
 
   // For the receiver
@@ -1191,14 +1193,18 @@ void uart2_isr(void)
   if(UART2_INTERRUPT_RX)
   {
     if(PIR3bits.RC2IF && interrupt_enable_rx)
+    {
       uart2_buffer_rx_load();
+      return 1;
+    }
   }
   
-  if(interrupt_enable_rx)
+  /*if(interrupt_enable_rx)
     PIE3bits.RC2IE = 1;
 
   if(interrupt_enable_tx)
-    PIE3bits.TX2IE = 1;
+    PIE3bits.TX2IE = 1;*/
+  return 0;
 }
 
 /**************************************************
@@ -1262,7 +1268,7 @@ unsigned char uart1_error_handle()
   else if(uart1_status.buffer_rx_error_frame)
   {
 	uart1_status.buffer_rx_error_frame = 0;
-    return FRAME_ERROR;
+    return FRAME_ERROR_CODE;
   }
 
   return 0;
@@ -1290,7 +1296,7 @@ unsigned char uart1_error_translate(unsigned char *error_message, unsigned char 
       *length = sprintf(error_message, "Uart Overrun\r\n");
       break;
 
-    case FRAME_ERROR:
+    case FRAME_ERROR_CODE:
       *length = sprintf(error_message, "Uart Frame error\r\n");
       break;
 
@@ -1328,7 +1334,7 @@ unsigned char uart2_error_handle()
   else if(uart2_status.buffer_rx_error_frame)
   {
     uart2_status.buffer_rx_error_frame = 0;
-    return FRAME_ERROR;
+    return FRAME_ERROR_CODE;
   }
 
   return 0;
@@ -1356,7 +1362,7 @@ unsigned char uart2_error_translate(unsigned char *error_message, unsigned char 
       *length = sprintf(error_message, "Uart Overrun\r\n");
       break;
 
-    case FRAME_ERROR:
+    case FRAME_ERROR_CODE:
       *length = sprintf(error_message, "Uart Frame error\r\n");
       break;
 

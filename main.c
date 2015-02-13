@@ -6,7 +6,11 @@
  * \version 1.0
  * \date 04/08/2014
  */
-//#define CONFIGURE_MODE /**< Abilita direttamente il webserver senza interferire con la seriale */
+#define ERROR_MONITOR
+
+#ifdef ERROR_MONITOR
+#define TIMEOUT_ERROR_MONITOR_S 90 /**< Tempo prima di inviare il report di stallo */
+#endif
 
 #define USE_OR_MASKS /**< Abilita l'opeartore or per concatenare i parametri del timer1*/
 
@@ -16,13 +20,74 @@
 #define EEPROM_WRITE_PTR 0x04
 #define EEPROM_SEND_PTR 0x08
 #define ADC_TIMEOUT_PTR 0x0C
-#define DATA_DELAY_PTR 0x10
-#define BATT_WARN_PTR 0x14
-#define BATT_MIN_PTR 0x18
-#define SLEEP_PTR 0x1C
-#define CATEGORY_PTR 0x20
+#define EXT1_TIMEOUT_PTR 0x10
+#define DATA_DELAY_PTR 0x14
+#define BATT_WARN_PTR 0x18
+#define BATT_MIN_PTR 0x1C
+#define SLEEP_PTR 0x20
+#define CATEGORY_PTR 0x24
+#define TIME_PTR 0x26
+#define BATTERY_PTR  0x2A
+#define ERROR_PTR 0x40
 
 #define TIMEOUT_UPDATE_RQST_MS 1000 /**< Periodo di invio delle richieste in centesimi di secondo*/
+#define TIMEOUT_CALIB_MODE_S 300 /**< Scandenza della modalità calibrazione in secondi */
+#define TIMEOUT_CALIB_SUCCESS_S 10 /**< Scandenza della modalità calibrazione in secondi */
+
+#define EXT1_CALIB_RANGE_MIN 0x4B5  // 0.5 mm
+#define EXT1_CALIB_RANGE_MAX 0x579  // -0.5 mm
+
+#define spi_open() {spi_sck_tris = OUTPUT_PIN; spi_sdo_tris = OUTPUT_PIN; spi_sdi_tris = INPUT_PIN; spi_cs_tris = OUTPUT_PIN; OpenSPI2(SPI_FOSC_16, MODE_11, SMPEND);}
+#define spi_close() {CloseSPI2(); spi_sck_tris = INPUT_PIN; spi_sdo_tris = INPUT_PIN; spi_sdi_tris = INPUT_PIN; spi_cs_tris = INPUT_PIN;}
+/**
+ * L'error monitor
+ *
+ * L'error monitor è uno strumento di debug che memorizza alcune variabili nella
+ * eeprom interna allo scadere di un certo periodo TIMEOUT_ERROR_MONITOR_S in cui
+ * il modulo rn131 è rimasto acceso.
+ * Questo consente al manutentore di trovare in modo più agevole il motivo dello
+ * stallo del dispositivo. L'error monitor può essere attivato decommentando
+ * il define ERROR_MONITOR e ricompilando il codice.
+ */
+
+/**
+ * L'avvio del modulo rn131.
+ *
+ * Per funzionare correttamente, il modulo wifly deve essere configurato in tutte
+ * le sue parti, altrimenti non sarà possibile inizializzare l'ora di sistema e
+ * far partire l'acquisizione.
+ *
+ * Esistono 3 diverse modalità all'accensione del modulo:
+ * - modalità normale: in questo caso il modulo si è avviato in modalità client
+ *     e viene ricevuta la stringa di inizializzazione wifly-GSX Ver: ". A questo
+ *     punto il micro tenta di collegarsi alla rete preimpostata. Anche in questo
+ *     caso esistono diversi casi:
+ *        - associazione all'access point conclusa con successo, condizione verificata
+ *          alla ricezione della stringa "Listen on ". Il micro comincerà allora
+ *          a richiedere l'aggiornamento dell'ora di sistema. In caso di problemi
+ *          viene scaricata la configurazione via ftp, nel caso in cui il problema
+ *          sia dovuto alle impostazioni errate. Se anche questo tentativo fallische,
+ *          allora si manda il modulo in sleep e si riproverà al prossimo risveglio
+ *
+ *        - associazione all'access point fallita, condizione risolta dopo che
+ *          non è stata ancora ricevuta la stringa "Listen on " allo scadere di
+ *          un periodo prestabilito. In questo caso il modulo viene riavviato
+ *          in modalità AP per consentire all'utente di selezionare la giusta rete
+ *
+ * - modalità server, con AP abilitato e DHCP server. Questa condizione si verifica
+ *     alla ricezione della stringa "wifly-GSX Ver: " seguita da "AP mode" durante
+ *     l'inizializzazione. Da notare che viene comunque ricevuta la stringa
+ *     "Listen on ". Quando viene rilevato il suddetto caso, il valore ap_mode
+ *     nella struttura rn131 viene impostato: è possibile distinguere questa
+ *     modalità da quella del softAP in quanto per il micro non è possibile
+ *     avviare l'access point se prima non viene impostata l'ora.
+ *
+ * - modalità softAP: in questo caso al modulo è stato comandato di partire come
+ *     access point con la piattaforma webserver attiva. Tale condizione è
+ *     verificata quando, invece della solita stringa d'inizializzazione
+ *     "wifly-GSX Ver: ", viene ricevuta "WiFly WebConfig". In questo caso il
+ *     microcontrollore non interviene ed attende di ricevere l'altra stringa.
+ */
 
 /**
  * Offset per il Timer1.
@@ -43,33 +108,52 @@
  */
 #define TIMER_OFFSET 64535
 
+/**
+ * Offset per il Timer3.
+ *
+ * Il Timer3 è utilizzato per gestire le tempistiche della 1-wire. Da specifica,
+ * per una trasmissione standard, deve avere un periodo di 1us, mentre per una
+ * trasmissione overdrive di 0.25us.
+ *
+ * \f[
+ *   n = \frac {1 \times 10^{-6}} {t_{ck} \times 4 \times prescaler} = {10^{-6} \times 4 \times 10^{6}} = 4
+ * \f]
+ *
+ * Per avere un overflow ogni 1 us si dovrà precaricare il registro di:
+ *
+ * \f[
+ *   TIMER\_OFFSET = (2^{16} -1) - n = 65531
+ * \f]
+ */
+#define _1_WIRE_OFFSET 65531
+
 #define END_OF_MESSAGE 0x2a /**< Char che indica la fine del messaggio */
 //#define RESET_ON_UART_OVERFLOW /**< Resetta il micro sull'evento di overflow della seriale */
 #define REQUEST_NUMBER_OF_TRY 10 /**< Numero di tentativi prima di rinunciare */
 
-#define BATT_AN_CHANNEL ADC_CH0 /**< Porta analogica dove è collegata la batteria */
-#define LVDT_AN_CHANNEL ADC_CH4 /**< Porta analogica dove è collegato il sensore LVDT */
+#define BATT_AN_CHANNEL ADC_CH31 /**< Porta analogica dove è collegata la batteria */
+#define EXT1_AN_CHANNEL ADC_CH2 /**< Porta analogica dove è collegato il sensore EXT1 */
+#define EXT2_AN_CHANNEL ADC_CH5 /**< Porta analogica dove è collegato il sensore EXT2 */
 #define TEMP_AN_CHANNEL ADC_CH1 /**< Porta analogica dove è collegato il sensore di temperatura */
-#define BATT_ADC_TIMEOUT_S 30 /**< Tempo tra un'acquisizione e l'altra della batteria*/
-#define LED_UPDATE_S 3600 /**< Ritardo nell'accensione del led di stato*/
+#define CALIBRATION_AN_CHANNEL ADC_CH0 /**< Riferimento interno a 1.024V usato per calibrare l'adc */
+#define BATT_ADC_TIMEOUT_S 60 /**< Tempo tra un'acquisizione e l'altra della batteria*/
+#define CIRCULAR_UPDATE_S 3600 /**< Intervallo per il salvataggio automatico dei valori associati al buffer circolare nella eeprom interna */
 #define CONNECTION_TIMEOUT_MS 20000 /**< Tempo limite oltre il quale si entra in modalità ap*/
+#define EXT1_DELAY_MS 100
+#define EEPROM_DELAY_MS 10
 
-#define STC3100_ADDR 0x70 /**< Indirizzo del battery gauge */
-#define STC3100_MODE 0x00 /**< Registro MODE */
-#define STC3100_CTRL 0x01 /**< Registro di controllo e di stato */
-#define STC3100_CHARGE_LOW 0x02 /**< LSB per la carica della batteria */
-#define STC3100_CHARGE_HIGH 0x03 /**< MSB per la carica della batteria */
-#define STC3100_COUNTER_LOW 0x04 /**< LSB per il numero di conversioni */
-#define STC3100_COUNTER_HIGH 0x05 /**< MSB per il numero di conversioni */
-#define STC3100_CURRENT_LOW 0x06  /**< LSB per il valore di corrente */
-#define STC3100_CURRENT_HIGH 0x07 /**< MSB per il valore di corrente */
-#define STC3100_VOLTAGE_LOW 0x08 /**< LSB per il valore di tensione della batteria */
-#define STC3100_VOLTAGE_HIGH 0x09 /**< MSB per il valore di tensione della batteria */
-#define STC3100_TEMPERATURE_LOW 0x0A /**< LSB per il valore di temperatura */
-#define STC3100_TEMPERATURE_HIGH 0x0B /**< MSB per il valore di temperatura */
-#define STC3100_ID0 0x18 /**< Registro per l'ID */
+#define ADC_FILTER_NUMBER 10 /**< Numero di acquisizioni su cui fare una media*/
 
-#define RTCC_ERROR_S 0.038
+#define BATT_CAPACITY 560.0 /**< Capacità della batteria in mAh */
+
+/**
+ * La frequenza reale dell'oscillatore interno si aggira circa sui 33.333kHz misurati.
+ * Questo significa che il suddetto periodo, moltiplicato per il prescaler di 32768,
+ * fornisce una base dei tempi per l'rtc pari a circa 0.983s. Questo significa che,
+ * per compensare la maggiore velocità, è necessario togliere ad ogni secondo
+ * (1-0.983)=0.01695s.
+ */
+#define RTCC_ERROR_S 0.01695
 #define STC3100_RESISTOR_MOHM 33.0
 
 #include <stdio.h>
@@ -90,7 +174,7 @@
 
 
 /* C O N F I G ***************************************************************/
-#pragma config RETEN = 0  /**< Vreg Sleep Enable bit (negate) */
+#pragma config RETEN = 1  /**< Vreg Sleep Enable bit (negate) */
 #pragma config INTOSCSEL = 1  /**< LF-INTOSCSEL Low-power Enable bit (negate) */
 #pragma config SOSCSEL = 2  /**< SOSC Power Selection and mode Configuration bits */
 #pragma config XINST = 0  /**< Extended Instruction Set */
@@ -120,10 +204,12 @@ void message_load_uart(const char *buffer);
 int ap_mode(void);
 int download_configuration_ftp(void);
 int ping(void);
+int ping_send(void);
 void circular_buffer_save(long start_address);
 int BCDToDecimal(char bcdByte);
 char DecimalToBCD(int decimalByte);
 void adc_open(int an_channel);
+void sleep_enter(void);
 
 /* G L O B A L   V A R I A B L E *********************************************/
 time_t time_by_rn131 = 0; /**< Detiene i secondi trascorsi dall'epoc*/
@@ -143,17 +229,36 @@ volatile int done = 0;
  * variabile viene impostata.
  *
  */
-volatile int rqst_update_flag = 0;
+volatile char rqst_update_flag = 0;
 
 /**
  * Indica quando si può leggere il valore dell'ultima acquisizione.
- *
- * Quando sono passati TIMEOUT_UPDATE_ADC_HS centesimi di secondo, questa
- * variabile viene impostata tramite l'interrupt del Timer1.
- *
  */
-volatile int adc_update = 0;
+volatile char adc_update = 0;
 
+/**
+ * Indica quando si possono aggiornare i valori del buffer circolare nella
+ * eeprom interna.
+ */
+volatile char circular_buffer_update = 0;
+
+#ifdef ERROR_MONITOR
+/**
+ * Indica quando si devono scrivere i valori di debug nella eeprom interna
+ */
+volatile char error_monitor_update = 0;
+#endif
+
+/**
+ * Indica quando c'è stato un errore di connessione verso la rete internet.
+ *
+ * Può assumere tre valori:
+ *   0 - nessun errore di connessione
+ *   1 - primo tentativo di connessione al web server fallito. Si tenta di scaricare
+ *       la configurazione tramite ftp, nel caso uno dei parametri fosse errato.
+ *   2 - secondo tentativo fallito. Si azzera il flag e si spegne l'alimentazione
+ *       secondaria.
+ */
 volatile int config_error = 0;
 
 /**
@@ -175,14 +280,34 @@ volatile int an_channel = -1;
  */
 volatile int tcp_start_timer_flag = -1;
 
+/**
+ * Tiene conto delle volte che è stato acquisito un canale adc.
+ *
+ * Viene utilizzata per acquisire in modo sequenziale un canale adc per poi
+ * fare la media dei valori.
+ */
+volatile char adc_acquisition_number = 0;
+
+volatile char calib_mode = 0;
+
+long rn131_timer = 0; /**< tempo trascorso prima di svegliare il modulo rn131 */
+unsigned char rn131_start_flag = 0; /**< viene posto alto dal micro appena il modulo viene alimentato */
+
+
 unsigned char timer_config = 0x00; /**< Registro di configurazione 1 per il Timer*/
 unsigned char timer_config1 = 0x00; /**< Registro di configurazione 2 per il Timer*/
+//unsigned char _1_wire_timer_config = 0x00; /**< Registro di configurazione 1 per il Timer*/
+//unsigned char _1_wire_timer_config1 = 0x00; /**< Registro di configurazione 2 per il Timer*/
 
 /**
  * Contatore per la lettura/scrittura seriale sulla eeprom
  */
 unsigned int eeprom_addr_count = 0;
 
+int eeprom_delay_flag = 0; /**< indica se è stato attivato il timer con il tempo necessario alla eeprom per accendersi */
+int adc_offset = 0; /**< memorizza l'errore in offset dell'adc */
+
+/* S  T R U C T *********************************************************/
 union
 {
   char bytes[38];
@@ -217,7 +342,7 @@ union
     {
       long value;
       unsigned char bytes[4];
-    } timeout_update_adc_ext1_ms; /**< Periodo di acquisizione dall'adc per il sensore LVDT */
+    } timeout_update_adc_ext1_ms; /**< Periodo di acquisizione dall'adc per il sensore EXT1 */
 
     union
     {
@@ -262,11 +387,11 @@ union status_flags_struct
   struct
   {
     unsigned battery_warning :1;  /**< batteria quasi scarica */
+    unsigned battery_undervoltage :1; /**< batteria scesa sotto 2V */
     unsigned spi_bus_collision :1; /**< collisione sul bus spi */
-    unsigned eeprom_full :1; /**< memoria eeprom piena */
+    unsigned eeprom_error :2; /**< 01b: memoria piena, 10b: errore di scrittura, 11b: eeprom assente */
     unsigned micro_reset_fault :1; /**< reset inaspettato */
     unsigned uart_overflow :1; /**< uart overflow */
-    unsigned eeprom_fail :1; /**< eeprom fault */
     unsigned rttc_update_fail :1; /**< rtcc fault*/
   } bits;
 } status_flags;
@@ -277,10 +402,11 @@ char buffer[UART2_BUFFER_SIZE_RX];/**< buffer globale d'appoggio sia in lettura 
  *  Indica quando il micro può inviare dati sulla seriale.
  *
  * Il microcontrollore può inviare i dati solo quando è certo che il dispositivo
- * rn131 sia sveglio ed associato ad un access point. Un'altra condizione necessaria
- * è che l'ora sia stata acquisita correttamente. Tutto questo viene riflesso sulla
- * variabile communication_ready.
- * 
+ * rn131 sia sveglio, associato ad un access point ed il web server sia in ascolto.
+ * Un'altra condizione necessaria è che l'ora sia stata acquisita correttamente.
+ * Tutto questo viene riflesso sulla variabile communication_ready.
+ * Quando viene impostato ad 1, significa che è stata mandata una richiesta GET
+ * vuota per controllare che il webserver risponda.
  */
 volatile char communication_ready = 0;
 
@@ -324,11 +450,16 @@ union sample_union sample;
 void interrupt myIsr(void)
 {
   static short long adc_timer_temp = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della temperatura. */
-  static short long adc_timer_lvdt = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra dell'LVDT */
+  static short long adc_timer_ext1 = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra dell'EXT1 */
   static short long adc_timer_batt = BATT_ADC_TIMEOUT_S; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della batteria. */
+  static char rn131_sleep_flag = 0;
+
 
   if(UART2_INTERRUPT_RX > 0)
-    uart2_isr();
+  {
+    if(uart2_isr())
+      return;
+  }
 
   if((rn131_int_flag == 1) && (rn131_int_enable == 1))
   {
@@ -339,31 +470,23 @@ void interrupt myIsr(void)
     if(rn131_rts_pin == 0)
     {
       rn131_rts_pin = 1;
-      rn131_int_edge = 0;
 
-      // Reset status flags
-      rn131.connected = 0;
-      rn131.tcp_open = 0;
-      rn131.tcp_error = 0;
-      rn131.cmd_mode_exit_rqst = 0;
-      rn131.cmd_mode_reboot_rqst = 0;
-      rn131.cmd_mode_sleep_rqst = 0;
-      rn131.cmd_http_rqst = 0;
-      rn131.cmd_mode_rqst = 0;
-      rn131.time_set_rqst = 0;
-      rn131.cmd_mode = 0;
+      if(rn131_start_flag == 1)
+      {
+        rn131_int_edge = 0;
+        
+        // Reset status flags
+        rn131_reset_flag();
 
-      rn131.ready = 0;
-
-      communication_ready = 0;
-
-      rn131.wakeup = 1;
-
-      OSCCONbits.SCS = 3;
-      
-      uart2_tx_tris = OUTPUT_PIN;
-      uart2_rx_tris = INPUT_PIN;
-      uart2_open(9600);
+        communication_ready = 0;
+        
+        rn131.wakeup = 1;
+      }
+      else
+      {
+        // non voglio il modulo acceso, quindi lo spengo subito
+        rn131_sleep_flag = 1;
+      }
 
     }
     else
@@ -391,26 +514,53 @@ void interrupt myIsr(void)
    */
   if(PIR3bits.RTCCIF && PIE3bits.RTCCIE)
   {
-    static short long led_timer = 0; /**< tiene il tempo per il led di stato */
-    static int rqst_update_timer = 0;
-    
+    static short long circular_timer = 0; /**< tiene il tempo per il led di stato */
+    static int rqst_update_timer = 0; /**< tempo trascorso prima di abilitare l'invio di una nuova richiesta */
+    static short long connection_timer = 0; /**< tiene il tempo per lo scadere del tentativo di connession */
+    static int calib_timer = 0; /**< tempo trascorso prima di tornare nella modalità normale */
+    static int calib_success_start = 0; /**< detiene la prima occorrenza di calibrazione ottima senza interruzioni */
+    static const int timeout_update_rqst_s = TIMEOUT_UPDATE_RQST_MS / 1000;
+    static const int timeout_connection_s = CONNECTION_TIMEOUT_MS / 1000;
+
     PIR3bits.RTCCIF = 0;
     //led_err = ~led_err;
-
+    
+#ifdef ERROR_MONITOR
+    static signed char error_monitor_timer = 0; /**< tempo trascorso prima di lanciare il report */
+#endif
+    
     if(rn131.ap_mode == 0)
     {
-      if((rn131.time_set == 1))
+      if(rn131.time_set == 1)
       {
-        if(rn131.wakeup == 0)
+        if(rn131_start_flag == 0)
         {
-          if(TXSTA2bits.TXEN)
+          if(RCSTA2bits.SPEN == 1)
           {
             uart2_close();
             uart2_tx_tris = INPUT_PIN;
             uart2_rx_tris = INPUT_PIN;
           }
+
+          if(calib_mode == 0)
+          {
+            rn131_timer++;
+            if((rn131_timer >= configuration.timeout_sleep_s.value) && (an_channel == -1) && (alim_3_3V_enable == 0))
+            {
+              rn131_timer = 0;
+              rn131_start_flag = 1;
+
+              OSCCONbits.IDLEN = 0;
+
+              uart2_tx_tris = OUTPUT_PIN;
+              uart2_rx_tris = INPUT_PIN;
+              uart2_open(9600);
+
+              alim_3_3V_enable =  1;
+            }
+          }
         }
-        else
+        else //if(rn131_start_flag == 0)
         {
           /**
            * Abilita nuova richiesta
@@ -424,42 +574,130 @@ void interrupt myIsr(void)
            * ::rqst_update_timer
            */
           if(rn131.cmd_mode_exit_rqst || rn131.cmd_mode_reboot_rqst || rn131.cmd_mode_rqst ||
-             rn131.time_set_rqst || rn131.cmd_mode_sleep_rqst || rn131.cmd_http_rqst)
+             rn131.time_set_rqst || rn131.cmd_http_rqst)
+          {
             rqst_update_timer++;
+
+            if(rqst_update_timer == timeout_update_rqst_s)
+            {
+              rqst_update_timer = 0;
+              rqst_update_flag = 1;
+            }
+          }
           else
             rqst_update_timer = 0;
 
-          if(rqst_update_timer * 1000 == TIMEOUT_UPDATE_RQST_MS)
+          if((rn131.ready == 1) && (rn131.connected == 0))
           {
-            rqst_update_timer = 0;
-            rqst_update_flag = 1;
+            connection_timer++;
+
+            if(connection_timer >= timeout_connection_s)
+            {
+              connection_timer = 0;
+              config_error = 1;
+            }
           }
+          else if(connection_timer != 0)
+            connection_timer = 0;
         }
       }
 
-      led_timer++;
-      if(led_timer >= LED_UPDATE_S)
+      if(calib_mode == 0)  // non voglio sovrapposizione di luci durante la modalità calibrazione
       {
-        if(led_timer < (LED_UPDATE_S + 60))
+        circular_timer++;
+        if(circular_timer >= CIRCULAR_UPDATE_S)
         {
-          if(status_flags.bits.micro_reset_fault || status_flags.bits.spi_bus_collision)
-            led_err = 1;
-          else if(status_flags.bits.battery_warning || status_flags.bits.eeprom_full ||
-                status_flags.bits.uart_overflow)
+          circular_timer = 0;
+          circular_buffer_update = 1;
+        }
+
+        if((rn131.time_set == 1) && (rn131.wakeup == 0) && (rn131_start_flag == 0))
+        {
+          adc_timer_batt++;
+          adc_timer_temp += 1000;
+          adc_timer_ext1 += 1000;
+
+          if(adc_offset == 0)
           {
-            led_err = 1;
-            led_no_err = 1;
+            if((ADCON0bits.GO == 0) && (an_channel == -1))
+            {
+              adc_update = 1;
+              an_channel = CALIBRATION_AN_CHANNEL;
+              OSCCONbits.IDLEN = 0;
+              SelChanConvADC(an_channel);
+            }
+          }
+
+          if(adc_timer_batt >= BATT_ADC_TIMEOUT_S)
+          {
+            if((ADCON0bits.GO == 0) && (an_channel == -1))
+            {
+              adc_update = 1;
+              adc_timer_batt = 0;
+              an_channel = BATT_AN_CHANNEL;
+            }
+          }
+          else if((adc_timer_temp >= configuration.timeout_update_adc_temp_ms.value) ||
+                  (adc_timer_ext1 >= configuration.timeout_update_adc_ext1_ms.value)
+                 )
+          {
+            if(!T1CONbits.TMR1ON)
+            {
+              OSCCONbits.IDLEN = 1;
+              WriteTimer1(TIMER_OFFSET);
+              OpenTimer1(timer_config, timer_config1);
+            }
           }
           else
-            led_no_err = 1;
+          {
+            if(T1CONbits.TMR1ON == 1)
+              CloseTimer1();
+
+            // Se ho finito anche di campionare, allora posso tornare in sleep mode
+            if(an_channel == -1)
+            {
+              OSCCONbits.IDLEN = 0;
+            }
+          }
         }
-        else
+      }
+      else //if(calib_mode == 0)
+      {
+        calib_timer++;
+
+        if((led_err != 0) || (led_no_err != 1))
+          calib_success_start = calib_timer;
+
+        if((calib_timer >= TIMEOUT_CALIB_MODE_S) || ((calib_timer - calib_success_start) >= TIMEOUT_CALIB_SUCCESS_S))
         {
           led_err = 0;
           led_no_err = 0;
-          led_timer = 0;
+          calib_timer = 0;
+          calib_success_start = 0;
 
-          circular_buffer_save(EEPROM_COUNT_PTR);
+          adc_timer_ext1 = 0;
+          if(T1CONbits.TMR1ON == 1)
+            CloseTimer1();
+          an_channel = -1;
+          ext_shut = 0;
+          OSCCONbits.IDLEN = 0;
+          
+          calib_mode = 0;
+        }
+        else
+        {
+          // avvio l'acquisizione del canale
+          if((ADCON0bits.GO == 0) && (an_channel == -1))
+          {
+            adc_timer_ext1 = configuration.timeout_update_adc_ext1_ms.value;
+
+            if(!T1CONbits.TMR1ON)
+            {
+              OSCCONbits.IDLEN = 1;
+              WriteTimer1(TIMER_OFFSET);
+              OpenTimer1(timer_config, timer_config1);
+            }
+          }
         }
       }
 
@@ -467,65 +705,30 @@ void interrupt myIsr(void)
       {
         tcp_start_timer_flag++;
 
-        if(tcp_start_timer_flag == configuration.timeout_data_eeprom_s.value)
+        if(tcp_start_timer_flag >= configuration.timeout_data_eeprom_s.value)
           tcp_start_timer_flag = 0;
       }
+    }
 
-      if((rn131.time_set == 1) && (rn131.wakeup == 0))
+#ifdef ERROR_MONITOR
+    if((alim_3_3V_enable == 1) && (error_monitor_timer >= 0))
+    {
+      if(rn131.ap_mode == 0)
       {
-        adc_timer_batt++;
-        adc_timer_temp += 1000;
-        adc_timer_lvdt += 1000;
-
-        if(adc_timer_batt >= BATT_ADC_TIMEOUT_S)
-        {
-          if((ADCON0bits.GO == 0) && (an_channel == -1))
-          {
-            adc_update = 1;
-            adc_timer_batt = 0;
-            an_channel = BATT_AN_CHANNEL;
-          }
-        }
-        else if(adc_timer_temp >= configuration.timeout_update_adc_temp_ms.value)
-        {
-          // Avvia acquisizione
-          if((ADCON0bits.GO == 0) && (an_channel == -1))
-          {
-            adc_timer_temp = 0;
-            an_channel = TEMP_AN_CHANNEL;
-            update_date(RTCC_ERROR_S);
-            SelChanConvADC(an_channel);
-          }
-        }
-        
-        if(adc_timer_lvdt >= configuration.timeout_update_adc_ext1_ms.value)
-        {
-          if(!T1CONbits.TMR1ON)
-          {
-            OSCCONbits.IDLEN = 1;
-            WriteTimer1(TIMER_OFFSET);
-            OpenTimer1(timer_config, timer_config1);
-          }
-        }
-        else 
-        {
-          if(T1CONbits.TMR1ON == 1)
-            CloseTimer1();
-
-          // Se ho finito anche di campionare, allora posso tornare in sleep mode
-          if(an_channel == -1)
-          {
-            OSCCONbits.IDLEN = 0;
-          }
-        }
+        error_monitor_timer++;
       }
       else
-      {
-        adc_timer_batt = 0;
-        adc_timer_temp = 0;
-        adc_timer_lvdt = 0;
-      }
+        error_monitor_timer = 0;
     }
+    else
+      error_monitor_timer = 0;
+
+    if(error_monitor_timer >= TIMEOUT_ERROR_MONITOR_S)
+    {
+      error_monitor_timer = -1;
+      error_monitor_update = 1;
+    }
+#endif
   }
   
   if(PIR1bits.ADIF && PIE1bits.ADIE)
@@ -544,11 +747,17 @@ void interrupt myIsr(void)
     WriteTimer1(TIMER_OFFSET);
     PIR1bits.TMR1IF = 0;
 
+    /**
+     * \attention Il timer1 sostituisce l'rtc finchè questo non è stato inizializzato,
+     * evento che avviene dopo aver acquisito l'ora.
+     */
     if(rn131.ap_mode == 0)
     {
-      if((rn131.wakeup == 1) && (rn131.ready == 1) && 
-         (((rn131.time_set == 1) && (rn131.connected == 0)) || (rn131.time_set == 0))
-          )
+      // Questo if serve soltanto per inizializzare l'ora, quindi ho bisogno di
+      // sapere quando avvisare dell'errore e di inoltrare le richieste in modo
+      // regolare. Una volta acquisita l'ora, non c'è  più motivo di attivare il
+      // timer1 mentre il modulo wifi è acceso.
+      if((rn131.ready == 1) && (rn131.time_set == 0))
       {
         connection_timer++;
 
@@ -557,66 +766,141 @@ void interrupt myIsr(void)
           connection_timer = 0;
           config_error = 1;
         }
-      }
-      else if(connection_timer != 0)
-        connection_timer = 0;
 
-      /**
-       * Abilita nuova richiesta
-       *
-       * Se c'è stata una richiesta non soddisfatta dopo ::TIMEOUT_UPDATE_RQST_HS
-       * allora si abilita il rinvio. In questo caso il firmware non deve andare
-       * in sleep.
-       *
-       * \attention Ogni flag di richiesta che si aggiunge a ::rn131_struct deve
-       * essere aggiunta anche nella condizione per incrementare il timer
-       * ::rqst_update_timer
-       */
-      if((rn131.wakeup == 1) || (rn131.time_set == 0))
-      {
+        /**
+         * Abilita nuova richiesta
+         *
+         * Se c'è stata una richiesta non soddisfatta dopo ::TIMEOUT_UPDATE_RQST_HS
+         * allora si abilita il rinvio. In questo caso il firmware non deve andare
+         * in sleep.
+         *
+         * \attention Ogni flag di richiesta che si aggiunge a ::rn131_struct deve
+         * essere aggiunta anche nella condizione per incrementare il timer
+         * ::rqst_update_timer
+         */
         if(rn131.cmd_mode_exit_rqst || rn131.cmd_mode_reboot_rqst || rn131.cmd_mode_rqst ||
-           rn131.time_set_rqst || rn131.cmd_mode_sleep_rqst || rn131.cmd_http_rqst)
+           rn131.time_set_rqst || rn131.cmd_http_rqst)
+        {
           rqst_update_timer++;
+
+          if(rqst_update_timer == TIMEOUT_UPDATE_RQST_MS)
+          {
+            rqst_update_timer = 0;
+            rqst_update_flag = 1;
+          }
+        }
         else
           rqst_update_timer = 0;
-
-        if(rqst_update_timer == TIMEOUT_UPDATE_RQST_MS)
-        {
-          rqst_update_timer = 0;
-          rqst_update_flag = 1;
-        }
       }
 
-      if((rn131.time_set == 1) && (rn131.wakeup == 0))
+      if(rn131_sleep_flag == 1)
       {
-        adc_timer_lvdt++;
+        adc_batt_enable_tris = OUTPUT_PIN;
+        adc_batt_enable = 1;
+        rn131_sleep_flag++;
+      }
+      else if(rn131_sleep_flag == 2)
+      {
+        adc_batt_enable = 0;
+        adc_batt_enable_tris = INPUT_PIN;
+        rn131_sleep_flag = 0;
+      }
+      
+      if((rn131.time_set == 1) && (rn131.wakeup == 0) && (rn131_start_flag == 0))
+      {
+        adc_timer_ext1++;
+        adc_timer_temp++;
+
+        if(adc_timer_ext1 >= configuration.timeout_update_adc_ext1_ms.value)
+        {
+          // Avvia acquisizione
+          if((ADCON0bits.GO == 0) && (an_channel == -1))
+          {
+            // Il dispositivo ha bisogno di almeno 3 ms per tirare fuori un segnale valido.
+            // Inoltre anche lo step-up interno ha bisogno di un certo tempo di assestamento.
+            // 100 ms di attesa sono sufficienti per ottenere un segnale valido.
+#if(EXT1_DELAY_MS > EEPROM_DELAY_MS)
+            if(eeprom_delay_flag < EXT1_DELAY_MS)
+#else
+            if(eeprom_delay_flag < EEPROM_DELAY_MS)
+#endif
+            {
+              ext_shut = 1;
+
+              eeprom_delay_flag++;
+              
+              alim_3_3V_enable =  1;
+              adc_timer_ext1 = configuration.timeout_update_adc_ext1_ms.value;
+            }
+            else
+            {
+              adc_timer_ext1 = 0;
+              an_channel = EXT1_AN_CHANNEL;
+              update_date(RTCC_ERROR_S);
+              OSCCONbits.IDLEN = 0;
+              SelChanConvADC(an_channel);
+            }
+          }
+        }
+        else if(adc_timer_temp >= configuration.timeout_update_adc_temp_ms.value)
+        {
+          // Avvia acquisizione
+          if((ADCON0bits.GO == 0) && (an_channel == -1))
+          {
+            // Il dispositivo ha bisogno di almeno 3 ms per tirare fuori un segnale valido.
+            // Inoltre anche lo step-up interno ha bisogno di un certo tempo di assestamento.
+            // 100 ms di attesa sono sufficienti per ottenere un segnale valido.
+            if(eeprom_delay_flag < EEPROM_DELAY_MS)
+            {
+              eeprom_delay_flag++;
+              alim_3_3V_enable =  1;
+              adc_timer_temp = configuration.timeout_update_adc_temp_ms.value;
+            }
+            else
+            {
+              adc_timer_temp = 0;
+              an_channel = TEMP_AN_CHANNEL;
+              update_date(RTCC_ERROR_S);
+              OSCCONbits.IDLEN = 0;
+              SelChanConvADC(an_channel);
+            }
+          }
+        }
+
+        // Se per ogni acquisizione devo attendere un tempo maggiore di EEPROM_DELAY_MS allora
+        // mi conviene spegnere l'alimentazione secondaria, altrimenti rimane accesa per non
+        // dover attendere di nuovo il tempo di setup della flash.
+        if((adc_timer_temp < (configuration.timeout_update_adc_temp_ms.value - EEPROM_DELAY_MS)) &&
+#if(EXT1_DELAY_MS > EEPROM_DELAY_MS)
+           (adc_timer_ext1 < (configuration.timeout_update_adc_ext1_ms.value - EXT1_DELAY_MS)) &&
+#else
+           (adc_timer_ext1 < (configuration.timeout_update_adc_ext1_ms.value - EEPROM_DELAY_MS)) &&
+#endif
+           (an_channel == -1) && (adc_acquisition_number == 0)
+          )
+        {
+
+          // Se manca più di un secondo allo scadere dei timer, allora posso chiudere il timer
+          // ed affidarmi all'rtc.
+          if((adc_timer_temp < (configuration.timeout_update_adc_temp_ms.value - 1000)) &&
+#if(EXT1_DELAY_MS > EEPROM_DELAY_MS)
+             (adc_timer_ext1 < (configuration.timeout_update_adc_ext1_ms.value - 1000))
+#else
+             (adc_timer_ext1 < (configuration.timeout_update_adc_ext1_ms.value - 1000))
+#endif
+             )
+          {
+            CloseTimer1();
+          }
+          
+          alim_3_3V_enable =  0;
+          eeprom_delay_flag = 0;
+        }
       }
       else
       {
-        adc_timer_lvdt = 0;
-      }
-
-      if(adc_timer_lvdt >= configuration.timeout_update_adc_ext1_ms.value)
-      {
-        // Avvia acquisizione
-        if((ADCON0bits.GO == 0) && (an_channel == -1))
-        {
-          // Il dispositivo ha bisogno di almeno 3 ms per tirare fuori un segnale valido.
-          // Inoltre anche lo step-up interno ha bisogno di un certo tempo di assestamento.
-          // 100 ms di attesa sono sufficienti per ottenere un segnale valido.
-          if(ext_shut == 0)
-          {
-            ext_shut = 1;
-            adc_timer_lvdt = configuration.timeout_update_adc_ext1_ms.value - 100;
-          }
-          else
-          {
-            adc_timer_lvdt = 0;
-            an_channel = LVDT_AN_CHANNEL;
-            update_date(RTCC_ERROR_S);
-            SelChanConvADC(an_channel);
-          }
-        }
+        adc_timer_ext1 = 0;
+        adc_timer_temp = 0;
       }
     }
   }
@@ -630,20 +914,42 @@ void interrupt myIsr(void)
    *   tutti i dati imposto communication_ready a zero, così da ricadere nel
    *   primo caso
    * - la eeprom ha concluso le sue operazioni
-   * -
+   * - la seriale ha finito di inviare tutti i dati
+   * - non devo aggiornare i dati di errore nella eeprom interna
   */
-  if(((rn131.time_set == 1) && (communication_ready == 0)) && (adc_update == 0) && (eeprom_at_work == 0) &&
-     (rn131.wakeup == 0) && (uart2_status.buffer_tx_empty == 1) && !BusyADC())
+  if(((rn131.time_set == 1) && (communication_ready == 0)) && (adc_update == 0) && 
+     (circular_buffer_update == 0) && (error_monitor_update != 1) && (eeprom_at_work == 0) &&
+     (rn131.wakeup == 0) && (rn131_start_flag == 0) && (uart2_status.buffer_tx_empty == 1) &&
+     !BusyADC() && (TXSTA2bits.TRMT == 1))
   {
-    // cambio la sorgente del clock con quella secondaria
-    // aspetto che il messaggio sia stato inviato sulla seriale fisica
-    while(TXSTA2bits.TRMT == 0)
-      NOP();
-
     SLEEP();
   }
 }
 
+/*
+ * Modifiche sulla scheda SMPPC-EL-001-01 (il simbolo * significa "necessaria")
+ *   - dissaldare il transistor Q1 ed i componenti associati (R1, R2, R4, R5, R6, C2).
+ *       Ora la temperatura viene letta dal modulo STC3100
+ *   * - Cortocircuitare i pin 4 e 5 del connettore USB. Il pin di ground è il 5,
+ *       ma nel circuito la massa è collegata al 4.
+ *   - abilitare il regolatore interno del modulo rn131 lasciando le resistenze
+ *     RP1 e RP2 e rimuovendo RP3. Nonostante sul datasheet si afferma che senza il
+ *     regolatore la tensione di alimentazione può scendere fino a 2.5V, in realtà
+ *     non si può andare sotto i 3.1V. Nel caso di regolatore spento, si è
+ *     sperimentato che la tensione di alimentazione può arrivare fino a 2.5V.
+ *   - Se si utilizzano le linee AN2 e AN6, rimuovere le resistenze R39 e R40.
+ *   - Saldare una resistenza da 2k al posto di R6. In questo modo il firmware
+ *       può effettuare la calibrazione andando a campionare il canale 0
+ *   - Cortocircuitare il pin 25 di rn131 con il pad di R2 (che è stata precedentemente
+ *     dissaldata), quello opposto pin adc_bat. Tramite questa modifica è possibile
+ *     mandare il modulo in sleep senza dover inviare dati sulla seriale e quindi molto più
+ *     velocemente. Montare al posto di R2 una resistenza da 10k per limitare la corrente
+ *   - Dissaldare tutte le resistenze ed i condensatori dell'adc. Dovrà essere il circuito
+ *     di condizionamento del sensore a dover rispettare la resistenza di carico e la tensione
+ *     massima consentita. Collegare delle resistenza da 0 ohm per mantenere il collegamento.
+ *
+ *
+ */
 /**
  * \brief Program's entry.
  *
@@ -653,44 +959,24 @@ void interrupt myIsr(void)
  *   - prima di provare la presenza del webserver, sono costretto a fare un ping a google.it, altrimenti
  *     la connessione non va a buon fine "Connection FAILED".
  *   - se attivo l'interrupt sulla seriale, il micro si resetta
- *   - quando vado in sleep il tempo che trascorre tra un timeout e l'altro del timer 1 è più lungo.
- *     Questo è dovuto al ritardo introdotto dall'uscita dalla modalità sleep. Questo errore me lo porto dietro sia nel calcolo del tempo trascorso che nel numero di campioni
- *     presi dall'adc
+ *   - il primo invio viene saltato
  *
  *
  * @todo
+ * - aggiornare offset adc ad intervalli regolari
+ * - speficare nella documentazione che ext2 viene acquisito subito dopo ext1 e viene inviato come variabile
+ *   di supporto con il codice 0x03
  * - testare se il battery gauge misura bene
- * - calibrare il modulo stc3100
- * - portare il sistema a 31 kHz quando il modulo wifly è spento
  * - scrivere sulla eeprom solo dopo 32 byte, così da ridurre il consumo di corrente
  * - usare lvd feature per capire quando la batteria è scarica
- * - implementare codice errore FTP timeout=2
- * - scrivere i codici di stato interno
- * - verificare che vada in sleep passati 40 secondi, anche quando si trova in modalità web server
- * - caricare il file di configurazione spin all'avvio
- * - aggiungere comando "salva configurazione"
  * - aggiungere comando "reset parametri"
- * - provare che i valori siano effettivamente salvati nella eeprom interna
- * - memorizzare nell'eeprom la configurazione per il modulo wifly
- * - aggiungere l'acquisizione da un sensore esterno ed aggiornare la categoria nel messaggio
  * - capire se un modulo è stato configurato attraverso la versione del firmware
  * - reset del micro da remoto
- * - comando salva ed spegni
- * - rivedere l'acquisizione del RTC da remoto: è stata divisa per farla diventare
- *   più veloce, però ha bisogno dei messaggi che seguono per finire il ciclo di
- *   acquisizione
- * - gestire meglio l'interrupt del timer
  * - provare l'interrupt sul fronte del pin b3 quando viene tolta la batteria
- * - utilizzare il campo riservato per inoltrare gli errori(batteria quasi scarica,
- *   errore di lettura/scrittura eeprom, )
- * - prendere il carattere di fine messaggio direttamente dal modulo wifly,
- *   tra le informazioni del comando "get comm"
  * - invece di fare il polling sui messaggi inviati dal modulo, un altro modo per
  *   capire se il modulo è stato associato all'access point è tramite il comando
  *   "show net" oppure "show connection
  * - descrivere come è stato impostato il tempo di campionamento dell'adc
- * - utilizzare pin CTS ed RTS per svegliare il dispositivo ed inviare dati
- * - valutare se conviene impostare come clock il timer1 durante lo sleep.
  * - scrivere documentazione temporizzazione
  * - scrivere documentazione
  *
@@ -700,7 +986,7 @@ int main(void)
   char ascii_buffer[256];
   char end_of_message[2] = {END_OF_MESSAGE, 0};
   int ascii_buffer_size = 0;
-  long timeout_update_hs_temp = 0;
+  long timeout_update_ms_temp = 0;
 
   char *cmd_http_start = rn131.cmd_http;
   char *cmd_http_mark = NULL;
@@ -708,19 +994,25 @@ int main(void)
 
   unsigned int uart_empty_space = 0;
   char uart_token[] = {'\n', '*'};
-  unsigned short long eeprom_data_to_send; /**< numero di byte caricati dall'eeprom e pronti per essere inviati*/
-  
-  //unsigned int adc_result = 0; /**< valore del canale analogico*/
+  unsigned short long eeprom_data_to_send = 0; /**< numero di byte caricati dall'eeprom e pronti per essere inviati*/
+  udiv_t data_frame_number; /**< da qui prendo il quoziente per il calcolo del numero massimo di byte che posso leggere dalla eeprom */
+
   float battery_value_temp = 0; /**< Valore di apporggio per impostare il livello della batteria da remoto*/
 
-  int windbond_return_value;
+  long adc_filtered = 0;
+  
+  int winbond_return_value;
+  int ftp_update_return_value = 0;
+  int ping_result = 0;
+
+  float batt_soc = 0; /**< carica della batteria in percentuale */
 
   WDTCONbits.REGSLP = 1; // on-chip regulator enters low-power operation when device enters in Sleep mode
   OSCTUNEbits.INTSRC = 0;
   OSCCON2bits.MFIOSEL = 0;
   OSCCONbits.IRCF = 7;
   OSCTUNEbits.PLLEN = 0;
-  OSCCONbits.IDLEN = 0;
+  OSCCONbits.IDLEN = 1;
   OSCCONbits.SCS = 3;
 
   initialize_system();
@@ -738,6 +1030,8 @@ int main(void)
     status_flags.bits.micro_reset_fault = 1;
     RCONbits.BOR = 1;
     RCONbits.RI = 1;
+    led_err = 1;
+    led_no_err = 1;
   }
 
   // reset instruction
@@ -745,6 +1039,8 @@ int main(void)
   {
     status_flags.bits.micro_reset_fault = 1;
     RCONbits.RI = 1;
+    led_err = 1;
+    led_no_err = 1;
   }
 
   // configuration mismatch reset
@@ -752,17 +1048,19 @@ int main(void)
   {
     status_flags.bits.micro_reset_fault = 1;
     RCONbits.CM = 1;
+    led_err = 1;
+    led_no_err = 1;
   }
 
   /************ INIT GLOBAL ***********/
-  configuration.timeout_sleep_s.value = 120;
+  configuration.timeout_sleep_s.value = 240;
   configuration.timeout_update_adc_temp_ms.value = 30000;
   configuration.timeout_update_adc_ext1_ms.value = 30000;
   configuration.timeout_data_eeprom_s.value = 10;
   configuration.battery_warn_value.value = 3.2;
   configuration.battery_min_value.value = 3.0;
   configuration.category.value = 2;
-  windbond_return_value = 0;
+  winbond_return_value = 0;
 
   // Disable all peripheral
   PMD0 = 0b11101000;
@@ -786,7 +1084,7 @@ int main(void)
   OpenI2C1(MASTER, SLEW_OFF);
 
   // 400kHz Baud Clock
-  SSPADD = FOSC_MHZ / (4 * 300000) - 1;
+  SSPADD = FOSC_HZ / (4 * 300000) - 1;
 
   // Read ID
   stc3100_get(STC3100_ADDR, STC3100_ID0, 8, stc3100_id);
@@ -806,17 +1104,14 @@ int main(void)
 
   /******* INIT SPI   ******************/
   // init spi
-  spi_sck_tris = OUTPUT_PIN;
-  spi_sdo_tris = OUTPUT_PIN;
-  spi_sdi_tris = INPUT_PIN;
-  spi_cs_tris = OUTPUT_PIN;
-
   spi_cs = 1;
 
   CloseSPI2();
-  OpenSPI2(SPI_FOSC_16, MODE_11, SMPEND);
+  spi_open();
 
   /************ INIT TIMER *********/
+  CloseTimer0();
+  CloseTimer1();
   timer_config = T1_16BIT_RW | T1_SOURCE_FOSC_4 | T1_PS_1_4 | T1_OSC1EN_OFF
           | T1_SYNC_EXT_OFF | TIMER_INT_ON;
 
@@ -825,6 +1120,12 @@ int main(void)
   OpenTimer1(timer_config, timer_config1);
   WriteTimer1(TIMER_OFFSET);
 
+  /*_1_wire_timer_config = T3_16BIT_RW | T3_SOURCE_FOSC_4 | T3_PS_1_4 | T3_OSC1EN_OFF
+          | T3_SYNC_EXT_OFF | TIMER_INT_OFF;
+
+  _1_wire_timer_config1 = TIMER_GATE_OFF;
+  WriteTimer3(_1_WIRE_OFFSET);*/
+  
   /************ INTERRUPT *********/
   
   /********* RTS INTERRUPT ********/
@@ -837,10 +1138,10 @@ int main(void)
 
   /********* ADC INTERRUPT ********/
   ADC_INT_ENABLE();
-  
+
   INTCONbits.PEIE = 1;
   ei(); // enable all interrupt
-  
+
   /******* INIT DATA ********/
   rn131.wakeup = 0;
   rn131.ready = 0;
@@ -849,20 +1150,21 @@ int main(void)
   rn131.tcp_error = 0;
   rn131.cmd_mode = 0;
   rn131.ap_mode = 0;
+  rn131.web_server_mode = 0;
   rn131.cmd_mode_rqst = 0;
   rn131.cmd_mode_exit_rqst = 0;
   rn131.cmd_mode_reboot_rqst = 0;
-  rn131.cmd_mode_sleep_rqst = 0;
   rn131.cmd_http_rqst = 0;
   rn131.time_set = 0;
   rn131.time_set_rqst = 0;
   
   int rn131_message_length = 0;
 
-  alim_3_3V_enable_tris = OUTPUT_PIN;
+  rn131_start_flag = 1;
   alim_3_3V_enable =  1;
   
   memset(winbond.device_id, 0, sizeof(winbond.device_id));
+  memset(ascii_buffer, 0, sizeof(ascii_buffer));
 
   // leggo dalla EEPROM i valori dei puntatori circolari. Nel caso fosse
   // la prima esecuzione del programma dopo la programmazione, allora inizializzo
@@ -883,14 +1185,14 @@ int main(void)
     configuration.battery_warn_value.value = 3.2;
     configuration.battery_min_value.value = 3.0;
     configuration.category.value = 2;
-    configuration.timeout_sleep_s.value = 120;
+    configuration.timeout_sleep_s.value = 240;
   }
   
   eeprom_at_work = 0;
 
   status_flags.byte = 0;
   
-  __delay_ms(5);
+  __delay_ms(10);
   
   /* MANUFACTURER ID Winbond: 0xEF
    * DEVICE ID W25Q64BV:      0x16
@@ -907,19 +1209,18 @@ int main(void)
       status_flags.bits.spi_bus_collision = 1;
   }
   else
-    status_flags.bits.eeprom_fail = 1;
+    status_flags.bits.eeprom_error = 3;
 
   if(SSP2CON1bits.SSPEN == 1)
   {
-    CloseSPI2();
-    spi_sck_tris = INPUT_PIN;
-    spi_sdo_tris = INPUT_PIN;
-    spi_sdi_tris = INPUT_PIN;
-    spi_cs_tris = INPUT_PIN;
+    spi_close();
   }
   
   while(!done)
   {
+    if(UART2_INTERRUPT_RX == 0)
+      uart2_buffer_rx_load(); //Lettura del buffer di ricezione per aumentarne la frequenza
+
     /*************************************************************** Timers
      * I can't syncronize request with timer, so I discard the first occurrance.
      * In this way the max elapsed time is (TIMEOUT * 2)
@@ -945,7 +1246,7 @@ int main(void)
 
         rn131.time_set_rqst++;
         if(rn131.time_set_rqst == REQUEST_NUMBER_OF_TRY)
-          rn131.time_set_rqst = 0;
+          rn131.time_set_rqst = -1;
       }
 
       if(rn131.cmd_mode_exit_rqst == 1)
@@ -968,44 +1269,6 @@ int main(void)
         rn131.cmd_mode_reboot_rqst++;
         if(rn131.cmd_mode_reboot_rqst == REQUEST_NUMBER_OF_TRY)
           rn131.cmd_mode_reboot_rqst = 0;
-      }
-
-      if(rn131.cmd_mode_sleep_rqst == 1)
-        rn131.cmd_mode_sleep_rqst++;
-      else if(rn131.cmd_mode_sleep_rqst > 1)
-      {
-        if(rn131.cmd_mode == 0)
-        {
-          if(rn131.cmd_mode_rqst == 0)
-          {
-            message_load_uart("$$$");
-            rn131.cmd_mode_rqst = 1;
-          }
-        }
-        else
-        {
-          // richiedo di entrare in modalità sleep. Non posso controllare che ci
-          // entri veramente; se ci fosse stato un qualsiasi problema, si fa affidamento
-          // al timer interno che lo porterà comunque in sleep
-          message_load_uart("sleep\r");
-
-          // devo essere certo di inviare tutta la stringa prima di entrare in sleep,
-          // però non posso ignorare i messaggi che ricevo, altrimenti ottengon un
-          // overflow sulla seriale.
-          while(uart2_status.buffer_tx_empty == 0)
-          {
-            uart2_buffer_send();
-            uart2_buffer_rx_load();
-          }
-
-          // aspetto che il messaggio sia stato inviato sulla seriale fisica
-          while(TXSTA2bits.TRMT == 0)
-            NOP();
-
-          rn131_sleep();
-          communication_ready = 0;
-          tcp_start_timer_flag = -1;
-        }
       }
 
       if(rn131.cmd_http_rqst == 1)
@@ -1032,64 +1295,32 @@ int main(void)
           //il web server tutte le altre richieste devono essere annullate.
           if(strncmp(cmd_http_parse, "web_server", 10) == 0)
           {
-            if(rn131.cmd_mode == 0)
+            if(ap_mode() == 0)
             {
-              if(rn131.cmd_mode_rqst == 0)
-              {
-                message_load_uart("$$$");
-
-                rn131.cmd_http_rqst = 2;
-                rn131.cmd_mode_rqst = 1;
-              }
-
-              // esco dal ciclo while
-              cmd_http_mark = NULL;
+              rn131.cmd_http_rqst = 2; // rientro al prossimo aggiornamento di richiesta
+              break;
             }
             else
             {
-              message_load_uart("run web_app\r");
+               rn131.cmd_http_rqst = 2;
+              *cmd_http_start = 0; //annullo tutte le altre richieste
 
-              rn131.cmd_http_rqst = 0;
-              // annullo le altre richieste in sospeso
-              *cmd_http_start = 0;
-              cmd_http_mark = NULL;
+              // da questo punto in poi il modulo deve entrare in access point
+              // prima che la richiesta venga rinnovata.
+
+              break;
             }
+          }
+          else if(strncmp(cmd_http_parse, "calib", 5) == 0)
+          {
+            // Se il sensore permette questa possibilità, entro nella modalità
+            // calibrazione
+            if(configuration.category.value == 0x02)
+              calib_mode = 1;
           }
           else if(strncmp(cmd_http_parse, "set_sleep=", 10) == 0)
           {
-            if(rn131.cmd_mode == 0)
-            {
-              if(rn131.cmd_mode_rqst == 0)
-              {
-                message_load_uart("$$$");
-
-                rn131.cmd_http_rqst = 2;
-                rn131.cmd_mode_rqst = 1;
-              }
-
-              // esco dal ciclo while
-              cmd_http_mark = NULL;
-            }
-            else
-            {
-              configuration.timeout_sleep_s.value = atol(cmd_http_parse + 10);
-
-              sprintf(buffer, "set sys wake %ld\rsave\r", configuration.timeout_sleep_s.value);
-              uart2_buffer_tx_seq_load(buffer, strlen(buffer));
-              buffer[0] = 0;
-
-              cmd_http_start = cmd_http_mark + 1;
-              cmd_http_mark = strchr(cmd_http_start, '\r');
-
-              if(cmd_http_mark == NULL)
-                 rn131.cmd_http_rqst = 0;
-              else
-                 rn131.cmd_http_rqst = 2;
-
-              // esco dal ciclo while
-              cmd_http_mark = NULL;
-              rn131.cmd_mode_exit_rqst = 1;
-            }
+            configuration.timeout_sleep_s.value = atol(cmd_http_parse + 10);
           }
           else if((strncmp(cmd_http_parse, "get_config", 10) == 0) && (rn131.cmd_mode == 0))
           {
@@ -1103,20 +1334,10 @@ int main(void)
                     configuration.battery_warn_value.value, configuration.battery_min_value.value);
 
             strcat(buffer, ascii_buffer);
-
-            cmd_http_start = cmd_http_mark + 1;
-            cmd_http_mark = strchr(cmd_http_start, '\r');
-
-            rn131.cmd_http_rqst = 0;
           }
           else if((strncmp(cmd_http_parse, "set_config", 10) == 0) && (rn131.cmd_mode == 0))
           {
             circular_buffer_save(EEPROM_COUNT_PTR);
-
-            cmd_http_start = cmd_http_mark + 1;
-            cmd_http_mark = strchr(cmd_http_start, '\r');
-
-            rn131.cmd_http_rqst = 0;
           }
           else if((strncmp(cmd_http_parse, "get_batt", 8) == 0) && (rn131.cmd_mode == 0))
           {
@@ -1125,58 +1346,33 @@ int main(void)
             if(buffer[0] == 0)
               sprintf(buffer, "%sx:", rn131.mac);
 
-            sprintf(ascii_buffer, "batt=%1.2f,", stc3100_voltage_value_mV);
+            sprintf(ascii_buffer, "batt=%.0f,", batt_soc);
             strcat(buffer, ascii_buffer);
-
-            cmd_http_start = cmd_http_mark + 1;
-            cmd_http_mark = strchr(cmd_http_start, '\r');
-
-            rn131.cmd_http_rqst = 0;
           }
           else if((strncmp(cmd_http_parse, "set_category=", 13) == 0) && (rn131.cmd_mode == 0))
           {
             configuration.category.value = atoi(cmd_http_parse + 13);
-            
-            cmd_http_start = cmd_http_mark + 1;
-            cmd_http_mark = strchr(cmd_http_start, '\r');
-
-            rn131.cmd_http_rqst = 0;
           }
           else if((strncmp(cmd_http_parse, "set_adc=", 8) == 0) && (rn131.cmd_mode == 0))
           {
-            timeout_update_hs_temp = atol(cmd_http_parse + 8);
+            timeout_update_ms_temp = atol(cmd_http_parse + 8);
 
-            if(timeout_update_hs_temp > 0)
-              configuration.timeout_update_adc_ext1_ms.value = timeout_update_hs_temp;
-
-            cmd_http_start = cmd_http_mark + 1;
-            cmd_http_mark = strchr(cmd_http_start, '\r');
-
-            rn131.cmd_http_rqst = 0;
+            if(timeout_update_ms_temp > 0)
+              configuration.timeout_update_adc_ext1_ms.value = timeout_update_ms_temp;
           }
           else if((strncmp(cmd_http_parse, "set_adc_temp=", 13) == 0) && (rn131.cmd_mode == 0))
           {
-            timeout_update_hs_temp = atol(cmd_http_parse + 8);
+            timeout_update_ms_temp = atol(cmd_http_parse + 8);
 
-            if(timeout_update_hs_temp > 0)
-              configuration.timeout_update_adc_temp_ms.value = timeout_update_hs_temp;
-
-            cmd_http_start = cmd_http_mark + 1;
-            cmd_http_mark = strchr(cmd_http_start, '\r');
-
-            rn131.cmd_http_rqst = 0;
+            if(timeout_update_ms_temp > 0)
+              configuration.timeout_update_adc_temp_ms.value = timeout_update_ms_temp;
           }
           else if((strncmp(cmd_http_parse, "set_data_delay=", 15) == 0) && (rn131.cmd_mode == 0))
           {
-            timeout_update_hs_temp = atol(cmd_http_parse + 15);
+            timeout_update_ms_temp = atol(cmd_http_parse + 15);
 
-            if(timeout_update_hs_temp > 0)
-              configuration.timeout_data_eeprom_s.value = timeout_update_hs_temp;
-
-            cmd_http_start = cmd_http_mark + 1;
-            cmd_http_mark = strchr(cmd_http_start, '\r');
-
-            rn131.cmd_http_rqst = 0;
+            if(timeout_update_ms_temp > 0)
+              configuration.timeout_data_eeprom_s.value = timeout_update_ms_temp;
           }
           else if((strncmp(cmd_http_parse, "set_batt_warn=", 14) == 0) && (rn131.cmd_mode == 0))
           {
@@ -1184,11 +1380,6 @@ int main(void)
 
             if(battery_value_temp > 2.7)
               configuration.battery_warn_value.value = battery_value_temp;
-
-            cmd_http_start = cmd_http_mark + 1;
-            cmd_http_mark = strchr(cmd_http_start, '\r');
-
-            rn131.cmd_http_rqst = 0;
           }
           else if((strncmp(cmd_http_parse, "set_batt_min=", 13) == 0) && (rn131.cmd_mode == 0))
           {
@@ -1196,19 +1387,13 @@ int main(void)
 
             if(battery_value_temp >= 2.7)
               configuration.battery_min_value.value = battery_value_temp;
-
-            cmd_http_start = cmd_http_mark + 1;
-            cmd_http_mark = strchr(cmd_http_start, '\r');
-
-            rn131.cmd_http_rqst = 0;
           }
-          else if(rn131.cmd_mode == 0)
-          {
-            cmd_http_start = cmd_http_mark + 1;
-            cmd_http_mark = strchr(cmd_http_start, '\r');
 
+          cmd_http_start = cmd_http_mark + 1;
+          cmd_http_mark = strchr(cmd_http_start, '\r');
+
+          if(cmd_http_mark == NULL)
             rn131.cmd_http_rqst = 0;
-          }
         }
 
         if(buffer[0] != 0)
@@ -1221,32 +1406,28 @@ int main(void)
           while(uart2_status.buffer_tx_empty == 0)
           {
             uart2_buffer_send();
-            uart2_buffer_rx_load();
-          }
 
-          // aspetto che il messaggio sia stato inviato sulla seriale fisica
-          while(TXSTA2bits.TRMT == 0)
-            NOP();
+            if(UART2_INTERRUPT_RX == 0)
+              uart2_buffer_rx_load();
+          }
 
           // resetto il buffer, così che i valori vengano appesi partendo dall'inizio
           ascii_buffer[0] = 0;
-        }
-
-        // se non ho dati dell'adc da inviare, allora posso pure portare il
-        // modulo rn131 in sleep
-        if((rn131.cmd_http_rqst == 0) && (eeprom_data_count == 0))
-          rn131.cmd_mode_sleep_rqst = 1;
-
-        if(rn131.cmd_mode == 1)
-        {
-          message_load_uart("exit\r");
-          rn131.cmd_mode_exit_rqst = 1;
+          tcp_start_timer_flag = 1;
         }
       }
 
       rqst_update_flag = 0;
     }
-    
+
+    // se non ho dati dell'adc da inviare, richieste da servire, dati da inviare
+    // sulla uart ed ho già verificato la presenza del web server (per prendere
+    // eventuali richieste), allora posso spegnere il dispositivo
+    if(((rn131.wakeup == 1) || (rn131_start_flag == 1)) && (rn131.time_set == 1) && (rn131.ap_mode == 0) &&
+       (rn131.cmd_http_rqst == 0) && (eeprom_data_count == 0) && (TXSTA2bits.TRMT == 1) &&
+       (communication_ready == 1) && (tcp_start_timer_flag == -1) &&  (rn131.cmd_mode_reboot_rqst == 0))
+      sleep_enter();
+
     switch(uart2_error_handle())
     {
       case BUFFER_RX_OVERFLOW:
@@ -1276,17 +1457,28 @@ int main(void)
     {
       if(UART2_INTERRUPT_RX == 0)
         while(uart2_buffer_rx_load());
-        
+
       if(uart2_status.buffer_rx_empty == 0)
       {
         rn131_message_length = uart2_buffer_read_multifiltered(buffer, uart_token, 2);
+
+        if(UART2_INTERRUPT_RX == 0)
+          uart2_buffer_rx_load(); //Lettura del buffer di ricezione per aumentarne la frequenza
 
         if(rn131_message_length > 0)
         {
           // Check for a new connection
           if(rn131_connection_init(buffer, rn131_message_length) == 1)
           {
-            memset(buffer, 0, rn131_message_length);
+            buffer[0] = '\0';
+            if((rn131.web_server_mode == 1) && (rn131.ap_mode == 0)) // sono tornato dalla modalità web_server
+            {
+              rn131.web_server_mode = 0;
+              
+              if(rn131.time_set == 1)
+                sleep_enter();
+
+            }
             
             continue;
           }
@@ -1306,61 +1498,53 @@ int main(void)
               }
             }
 
-            if(rn131.connected == 1)
+            if((rn131.connected == 1) && (rn131.time_set == 1))
             {
-              if(rn131.time_set == 1)
+              if(rn131.tcp_open == 0)
               {
-                if(rn131.tcp_open == 0)
+                if(rn131_parse_message(buffer, "OPEN"))
                 {
-                  //if(rn131_tcp_connection())
-                  if(rn131_parse_message(buffer, "OPEN"))
-                  {
-                    rn131.tcp_open = 1;
-                    tcp_start_timer_flag = 1;
+                  rn131.tcp_open = 1;
+                  tcp_start_timer_flag = 1;
 
-                    continue;
-                  }
-
-                  //if(rn131_warninng_connection_failed())
-                  if(rn131_parse_message(buffer, "Connect FAILED") || rn131_parse_message(buffer, "HTTP/1.0 404 Not Found"))
-                  {
-                    rn131.tcp_error = 1;
-                    rn131.cmd_mode_sleep_rqst = 1;
-
-                    continue;
-                  }
+                  continue;
                 }
-                else
-                {
-                  if(rn131_http_response(buffer))
-                  {
-                    strcpy(rn131.cmd_http, buffer);
-                    continue;
-                  }
 
-                  if(rn131_parse_message(buffer, "CLOS"))
+                if(rn131_parse_message(buffer, "Connect FAILED") || rn131_parse_message(buffer, "HTTP/1.0 404 Not Found"))
+                {
+                  rn131.tcp_error = 1;
+                  sleep_enter();
+
+                  continue;
+                }
+              }
+              else
+              {
+                if((rn131.cmd_http_rqst == 0) && (rn131_http_response(buffer)))
+                {
+                  strcpy(rn131.cmd_http, buffer);
+                  continue;
+                }
+
+                if(rn131_parse_message(buffer, "CLOS"))
+                {
+                  rn131.tcp_open = 0;
+
+                  tcp_start_timer_flag = configuration.timeout_data_eeprom_s.value - 1;  // diminuisco il tempo di attesa ad 1 secondo
+                  if(rn131.cmd_http[0] != 0)
                   {
-                    rn131.tcp_open = 0;
-                    
-                    if(rn131.cmd_http[0] == 0)
-                      tcp_start_timer_flag = configuration.timeout_data_eeprom_s.value - 1;
-                      //tcp_start_timer_flag = 0;
-                    else
-                    {
-                      rn131.cmd_http_rqst = 1;
-                      cmd_http_start = rn131.cmd_http;
-                    }
-                    continue;
+                    rn131.cmd_http_rqst = 1;
+                    cmd_http_start = rn131.cmd_http;
                   }
+                  continue;
                 }
               }
             }
           }
-          else
+          else //if(rn131.cmd_mode == 0)
           {
             if(rn131.cmd_mode_exit_rqst > 0)
             {
-              //if(rn131_command_exit() == 1)
               if(rn131_parse_message(buffer, "EXIT"))
               {
                 rn131.cmd_mode = 0;
@@ -1380,6 +1564,9 @@ int main(void)
                   {
                     if(rn131.time_set == 1)
                     {
+                      if(T1CONbits.TMR1ON == 1)
+                        CloseTimer1();
+                      
                       date_structure = gmtime(&time_by_rn131);
 
                       // date_structure indica l'anno partendo dal 1900, mentre rtcc_date lo indica partendo
@@ -1430,13 +1617,17 @@ int main(void)
                       
                       rn131.time_set_rqst = 0;
 
+                      if(UART2_INTERRUPT_RX == 0)
+                        uart2_buffer_rx_load(); //Lettura del buffer di ricezione per aumentarne la frequenza
+
+
                       // It need to be rebooted otherwise the web server will kick off
                       // everyone trying to connect to it
                       if(rn131.cmd_mode_reboot_rqst == 0)
                       {
                         message_load_uart("reboot\r");
 
-                        rn131_sleep();
+                        rn131_reset_flag();
                         communication_ready = 0;
                         tcp_start_timer_flag = -1;
                         
@@ -1453,64 +1644,98 @@ int main(void)
         }
       }
     } while((rn131_message_length > 0) && (uart2_status.buffer_rx_empty == 0));
-    
+
+
+    if(UART2_INTERRUPT_RX == 0)
+      uart2_buffer_rx_load(); //Lettura del buffer di ricezione per aumentarne la frequenza
+
+
     /***********************************************************  Update  ***/
-    if(rn131.connected == 1)
+    if(rn131.connected == 1) // implica anche che il modulo è acceso
     {
       if(rn131.time_set == 0)
       {
         if(config_error == 1)
         {
-          if(download_configuration_ftp())
-            config_error = 0;
-        }
-        else if(rn131.cmd_mode == 0)
-        {
-          if(rn131.cmd_mode_rqst == 0)
+          rn131.time_set_rqst = 0;
+          ftp_update_return_value = download_configuration_ftp();
+          
+          if(ftp_update_return_value == 1)
           {
-            message_load_uart("$$$");
-            rn131.cmd_mode_rqst = 1;
+            config_error = 0;
+            rn131.time_set_rqst = 1;
           }
+          else if(ftp_update_return_value == -1)
+            config_error = 0;
         }
         else
         {
-          if(rn131.time_set_rqst == 0)
+          if(rn131.cmd_mode == 0)
           {
-            // Approfitto dell'inizializzazione dell'orologio per impostare anche il tempo di risveglio
-            // del modulo, nel caso fosse nuovo.
-            sprintf(buffer, "set sys wake %ld\rsave\r", configuration.timeout_sleep_s.value);
-            message_load_uart(buffer);
-            message_load_uart("time\r");
+            if(rn131.cmd_mode_rqst == 0)
+            {
+              message_load_uart("$$$");
+              rn131.cmd_mode_rqst = 1;
+            }
+          }
+          else
+          {
+            if(rn131.ap_mode == 0)
+            {
+              if(rn131.time_set_rqst == 0)
+              {
+                message_load_uart("time\r");
 
-            rn131.time_set_rqst = 1;
+                rn131.time_set_rqst = 1;
+              }
+            }
+            else
+            {
+              message_load_uart("set wlan join 1\rset ip dhcp 3\rsave\r");
+              message_load_uart("reboot\r");
+
+              rn131_reset_flag();
+              communication_ready = 0;
+              tcp_start_timer_flag = -1;
+              rn131.cmd_mode_reboot_rqst = 1;
+            }
           }
         }
       }
-      else if((rn131.wakeup == 1) && (communication_ready == 0) && (rn131.cmd_mode_sleep_rqst == 0))
+      else if(communication_ready == 0)  // verifico che il webserver sia presente
       {
-        if(ping())
+        ping_result = ping();
+        if(ping_result == 1)
         {
           sprintf(buffer, "%s%s", rn131.mac, end_of_message);
           uart2_buffer_tx_seq_load(buffer, strlen(buffer));
 
           while(uart2_status.buffer_tx_empty == 0)
+          {
             uart2_buffer_send();
 
-          // aspetto che il messaggio sia stato inviato sulla seriale fisica
-          while(TXSTA2bits.TRMT == 0)
-            NOP();
+            if(UART2_INTERRUPT_RX == 0)
+              uart2_buffer_rx_load();
+          }
   
           communication_ready = 1;
+          tcp_start_timer_flag = 1;
+        }
+        else if(ping_result == -1)
+        {
+          sleep_enter();
         }
       }
-
-      if((rn131.tcp_error == 0) && (rn131.cmd_mode_sleep_rqst == 0) && (tcp_start_timer_flag == 0))
+      else if((rn131.tcp_error == 0) && (tcp_start_timer_flag == 0))
       {
         // se mi trovo in modalità comandi, esco
         if(rn131.cmd_mode == 1)
         {
           if(rn131.cmd_mode_exit_rqst == 0)
+          {
+            message_load_uart("exit\r");
             rn131.cmd_mode_exit_rqst = 1;
+          }
         }
         else
         {
@@ -1524,12 +1749,7 @@ int main(void)
           {
             if(SSP2CON1bits.SSPEN == 0)
             {
-              spi_sck_tris = OUTPUT_PIN;
-              spi_sdo_tris = OUTPUT_PIN;
-              spi_sdi_tris = INPUT_PIN;
-              spi_cs_tris = OUTPUT_PIN;
-
-              OpenSPI2(SPI_FOSC_16, MODE_11, SMPEND);
+              spi_open();
             }
 
             // Voglio convertire i dati esadecimali in stringhe ascii: visto che ogni
@@ -1537,7 +1757,6 @@ int main(void)
             // nel buffer di trasmissione. Inoltre voglio inserire il MAC address
             // del dispositivo rn131, che è di 18 caratteri
             uart_empty_space = (uart2_get_tx_buffer_empty_space() >> 1) - 18;
-            udiv_t data_frame_number;
             data_frame_number = udiv(uart_empty_space - 1, sizeof(union sample_union));
         
             // leggo dall'eeprom e carico i dati sulla seriale. Devo riservarmi l'ultimo
@@ -1555,9 +1774,6 @@ int main(void)
               strcat(ascii_buffer,  rn131.mac);
               for(i = 0; i < eeprom_data_to_send; i++)
               {
-                /*ascii_hex[0] = buffer[i] >> 4;
-                ascii_hex[1] = buffer[i] & 0x0f;
-                ascii_hex[2] = '\0';*/
                 sprintf(ascii_hex, "%.02x", buffer[i]);
                 strcat(ascii_buffer,  ascii_hex);
               }
@@ -1570,32 +1786,26 @@ int main(void)
               while(uart2_status.buffer_tx_empty == 0)
               {
                 uart2_buffer_send();
-                uart2_buffer_rx_load();
-              }
 
-              // aspetto che il messaggio sia stato inviato sulla seriale fisica
-              while(TXSTA2bits.TRMT == 0)
-                NOP();
+                if(UART2_INTERRUPT_RX == 0)
+                  uart2_buffer_rx_load();
+              }
 
               // resetto il buffer, così che i valori vengano appesi partendo dall'inizio
               ascii_buffer[0] = '\0';
+
+              tcp_start_timer_flag = 1;
             }
 
             if(SSP2CON1bits.SSPEN == 1)
             {
-              CloseSPI2();
-              spi_sck_tris = INPUT_PIN;
-              spi_sdo_tris = INPUT_PIN;
-              spi_sdi_tris = INPUT_PIN;
-              spi_cs_tris = INPUT_PIN;
+              spi_close();
             }
-          }
-          else
-            rn131.cmd_mode_sleep_rqst = 1;
+          } //if(eeprom_data_count > 0)
         }
       }
     }
-    else
+    else //if(rn131.connected == 1)
     {
       if(config_error == 1)
       {
@@ -1604,145 +1814,353 @@ int main(void)
       }
     }
 
-    if((rn131.time_set == 1) && (adc_update == 1) && (rn131.wakeup == 0))
+    if(error_monitor_update == 1)
     {
-      if((an_channel > -1) && (SSP2CON1bits.SSPEN == 0))
-      {
-        spi_sck_tris = OUTPUT_PIN;
-        spi_sdo_tris = OUTPUT_PIN;
-        spi_sdi_tris = INPUT_PIN;
-        spi_cs_tris = OUTPUT_PIN;
+      int error_monitor_count = 0;
+      error_monitor_update = 0;
 
-        OpenSPI2(SPI_FOSC_16, MODE_11, SMPEND);
+      // Memorizzo lo stato in cui si è verificato lo stallo del dispositivo
+      led_err = 1;
+      circular_buffer_save(ERROR_PTR);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 2, T1CONbits.TMR1ON); // ptr = 0x66
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 3, rn131_start_flag);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 4, an_channel >> 8);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 5, an_channel & 0x00ff);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 6,  adc_update);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 7,  RCSTA2bits.SPEN);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 8,  SSP2CON1bits.SSPEN);
+
+      for(error_monitor_count = 0; error_monitor_count < 30; error_monitor_count++)
+        Write_b_eep(ERROR_PTR + BATTERY_PTR + 9 + error_monitor_count,  buffer[error_monitor_count]);
+
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 39, rn131.wakeup);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 40, rn131.ap_mode);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 41, rn131.cmd_mode);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 42, rn131.cmd_http_rqst);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 43, rn131.cmd_mode_exit_rqst);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 44, rn131.cmd_mode_reboot_rqst);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 45, rn131.cmd_mode_rqst);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 46, rn131.connected);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 47, rn131.ready);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 48, rn131.tcp_error);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 49, rn131.tcp_open);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 50, rn131.time_set);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 51, rn131.time_set_rqst);
+
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 52, uart2_status.buffer_rx_empty);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 53, uart2_status.buffer_rx_error_frame);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 54, uart2_status.buffer_rx_full);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 55, uart2_status.buffer_rx_micro_overflow);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 56, uart2_status.buffer_tx_empty);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 57, uart2_status.buffer_tx_full);
+
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 58, communication_ready);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 59, tcp_start_timer_flag & 0x00ff);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 60, tcp_start_timer_flag >> 8);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 61, eeprom_data_to_send & 0x0000ff);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 62, (eeprom_data_to_send >> 8) & 0x0000ff);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 63, eeprom_data_to_send >> 16);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 64, data_frame_number.quot);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 65, rqst_update_flag);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 66, config_error);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 67, status_flags.bits.battery_undervoltage);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 68, status_flags.bits.battery_warning);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 69, status_flags.bits.eeprom_error);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 70, status_flags.bits.micro_reset_fault);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 71, status_flags.bits.rttc_update_fail);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 72, status_flags.bits.spi_bus_collision);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 73, status_flags.bits.uart_overflow);
+
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 74, eeprom_data_count & 0x0000ff);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 75, (eeprom_data_count >> 8) & 0x0000ff);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 76, eeprom_data_count >> 16);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 77, eeprom_data_count >> 24);
+
+      Write_b_eep(ERROR_PTR + CATEGORY_PTR + 78, time_by_rn131 & 0x0000ff);
+      Write_b_eep(ERROR_PTR + CATEGORY_PTR + 79, (time_by_rn131 >> 8) & 0x0000ff);
+      Write_b_eep(ERROR_PTR + CATEGORY_PTR + 80, time_by_rn131 >> 16);
+      Write_b_eep(ERROR_PTR + CATEGORY_PTR + 81, time_by_rn131 >> 24);
+    }
+
+    if((rn131.time_set == 1) && (rn131.wakeup == 0) && (rn131_start_flag == 0))
+    {
+      if(circular_buffer_update == 1)
+      {
+        circular_buffer_save(EEPROM_COUNT_PTR);
+        circular_buffer_update = 0;
       }
 
-      switch(an_channel)
+      if(adc_update == 1)
       {
-        case BATT_AN_CHANNEL:
-          OpenI2C1(MASTER, SLEW_OFF);
-
-          // Leggo lo stato della batteria
-          // Coulomb counter reading
-          /*stc3100_get(STC3100_ADDR, STC3100_CHARGE_LOW, 4, stc3100_charge_state.bytes);
-          stc3100_soc_mAh = 6.70 * (float)(stc3100_charge_state.reg.charge.integer / STC3100_RESISTOR_MOHM);*/
-
-          // Battery current reading
-          /*stc3100_get(STC3100_ADDR, STC3100_CURRENT_LOW, 2, stc3100_current.bytes);
-          if((stc3100_current.integer & 0x2000) > 0)
-            stc3100_current.integer |= 0xE000;
-
-          stc3100_current_value_mA = 11.77 * (float)stc3100_current.integer / STC3100_RESISTOR_MOHM;*/
-
-          // Battery voltage reading
-          stc3100_get(STC3100_ADDR, STC3100_VOLTAGE_LOW, 2, stc3100_voltage.bytes);
-
-          if((stc3100_voltage.integer & 0x0800) > 0)
-            stc3100_voltage.integer |= 0xF000;
-
-          stc3100_voltage_value_mV = 2.44 * stc3100_voltage.integer;
-
-          if((stc3100_voltage_value_mV / 1000) <= configuration.battery_warn_value.value)
-            status_flags.bits.battery_warning = 1;
-
-          if((stc3100_voltage_value_mV / 1000) <= configuration.battery_min_value.value)
-          {
-            circular_buffer_save(EEPROM_COUNT_PTR);
-
-            // disabilito tutte le periferiche
-            di();
-            CloseTimer1();
-            CloseADC();
-            ADC_INT_DISABLE();
-
-            // Disabilito il modulo STC3100
-            OpenI2C1(MASTER, SLEW_OFF);
-            stc3100_write(STC3100_ADDR, STC3100_MODE, 0x00);
-            CloseI2C1();
-
-            CloseSPI2();
-            spi_sck_tris = INPUT_PIN;
-            spi_sdo_tris = INPUT_PIN;
-            spi_sdi_tris = INPUT_PIN;
-            spi_cs_tris = INPUT_PIN;
-
-            // disalimento tutto
-            alim_3_3V_enable = 0;
-            adc_batt_enable = 1;
-
-            // buona notte
-            OSCCONbits.IDLEN = 0;
-            SLEEP();
-          }
-
-          CloseI2C1();
-          break;
-
-        case TEMP_AN_CHANNEL:
-          sample.sample_struct.adc_value_int = ReadADC();
-          if(sample.sample_struct.adc_value_int != 0)
-          {
-            sample.sample_struct.category = 1;
-            sample.sample_struct.date = time_by_rn131;
-            sample.sample_struct.state = status_flags.byte;
-
-            windbond_return_value = winbond_data_load(sample.sample_array, sizeof(sample));
-
-            if(windbond_return_value == 0)
-            {
-              configuration.eeprom_ptr_wr.value = eeprom_ptr_wr;
-              configuration.eeprom_data_count.value = eeprom_data_count;
-            }
-            else if(windbond_return_value == -1)
-              status_flags.bits.spi_bus_collision = 1;
-            else if(windbond_return_value == -2)
-              status_flags.bits.eeprom_full = 1;
-          }
-          break;
-
-        case LVDT_AN_CHANNEL:
-          ext_shut = 0;
-          sample.sample_struct.adc_value_int = ReadADC();
-          if(sample.sample_struct.adc_value_int != 0)
-          {
-            sample.sample_struct.category = configuration.category.value;
-            sample.sample_struct.date = time_by_rn131;
-            sample.sample_struct.state = status_flags.byte;
-
-            windbond_return_value = winbond_data_load(sample.sample_array, sizeof(sample));
-
-            if(windbond_return_value == 0)
-            {
-              configuration.eeprom_ptr_wr.value = eeprom_ptr_wr;
-              configuration.eeprom_data_count.value = eeprom_data_count;
-            }
-            else if(windbond_return_value == -1)
-              status_flags.bits.spi_bus_collision = 1;
-            else if(windbond_return_value == -2)
-              status_flags.bits.eeprom_full = 1;
-          }
-          break;
-
-        default:
-          break;
-      }
-
-      adc_update = 0;
-     
-      if(an_channel > -1)
-      {
-        if(SSP2CON1bits.SSPEN == 1)
+        if((an_channel > -1) && (SSP2CON1bits.SSPEN == 0))
         {
-          CloseSPI2();
-          spi_sck_tris = INPUT_PIN;
-          spi_sdo_tris = INPUT_PIN;
-          spi_sdi_tris = INPUT_PIN;
-          spi_cs_tris = INPUT_PIN;
+          spi_open();
         }
-        
-        an_channel = -1;
 
-        SLEEP();
+        switch(an_channel)
+        {
+          case BATT_AN_CHANNEL:
+            OpenI2C1(MASTER, SLEW_OFF);
+
+            // Battery voltage reading
+            stc3100_get(STC3100_ADDR, STC3100_CTRL, 1, &stc3100_ctrl.bytes);
+
+            if(stc3100_ctrl.bits.pordet == 1)
+            {
+              status_flags.bits.battery_undervoltage = 1;
+
+              // devo far ripartire il gauge
+              stc3100_write(STC3100_ADDR, STC3100_MODE, 0x10);
+            }
+            else
+            {
+              if(stc3100_ctrl.bits.gg_eoc == 1)
+              {
+                // Leggo lo stato della batteria
+                // Coulomb counter reading
+                stc3100_get(STC3100_ADDR, STC3100_CHARGE_LOW, 4, stc3100_charge_state.bytes);
+                stc3100_soc_mAh = 6.70 * (float)(stc3100_charge_state.reg.charge.integer / STC3100_RESISTOR_MOHM);
+
+                if(stc3100_soc_mAh <= 0)
+                  batt_soc = (BATT_CAPACITY + stc3100_soc_mAh) * 100 / BATT_CAPACITY;
+                else
+                  batt_soc = 100;
+                
+                // Battery current reading
+                /*stc3100_get(STC3100_ADDR, STC3100_CURRENT_LOW, 2, stc3100_current.bytes);
+                if((stc3100_current.integer & 0x2000) > 0)
+                  stc3100_current.integer |= 0xE000;
+
+                stc3100_current_value_mA = 11.77 * (float)stc3100_current.integer / STC3100_RESISTOR_MOHM;*/
+              }
+
+              if(stc3100_ctrl.bits.gg_vtm_eoc == 1)
+              {
+                stc3100_get(STC3100_ADDR, STC3100_VOLTAGE_LOW, 2, stc3100_voltage.bytes);
+
+                if((stc3100_voltage.integer & 0x0800) > 0)
+                  stc3100_voltage.integer |= 0xF000;
+
+                stc3100_voltage_value_mV = 2.44 * stc3100_voltage.integer / 1000;
+
+                if((stc3100_voltage_value_mV) <= configuration.battery_warn_value.value)
+                  status_flags.bits.battery_warning = 1;
+
+                if((stc3100_voltage_value_mV) <= configuration.battery_min_value.value)
+                {
+                  circular_buffer_save(EEPROM_COUNT_PTR);
+
+                  // disabilito tutte le periferiche
+                  di();
+                  mRtccAlrmDisable();
+                  mRtccOff();
+
+                  CloseTimer1();
+                  CloseADC();
+                  ADC_INT_DISABLE();
+
+                  // Disabilito il modulo STC3100
+                  stc3100_write(STC3100_ADDR, STC3100_MODE, 0x00);
+                  CloseI2C1();
+
+                  spi_close();
+
+                  // disalimento tutto
+                  alim_3_3V_enable = 0;
+
+                  // buona notte
+                  OSCCONbits.IDLEN = 0;
+                  SLEEP();
+                }
+              }
+            }
+
+            CloseI2C1();
+            break;
+
+          case TEMP_AN_CHANNEL:
+            sample.sample_struct.adc_value_int = ReadADC();
+            if(sample.sample_struct.adc_value_int != 0)
+            {
+              sample.sample_struct.adc_value_int -= adc_offset;
+            
+              sample.sample_struct.category = 1;
+              sample.sample_struct.date = time_by_rn131;
+              sample.sample_struct.state = status_flags.byte;
+
+              winbond_return_value = winbond_data_load(sample.sample_array, sizeof(sample));
+
+              if(winbond_return_value == 0)
+              {
+                configuration.eeprom_ptr_wr.value = eeprom_ptr_wr;
+                configuration.eeprom_data_count.value = eeprom_data_count;
+              }
+              else if(winbond_return_value == -1)
+                status_flags.bits.spi_bus_collision = 1;
+              else if(winbond_return_value == -2)
+                status_flags.bits.eeprom_error = 1;
+              else if(winbond_return_value == -3)
+                status_flags.bits.eeprom_error = 2;
+            }
+            break;
+
+          case EXT1_AN_CHANNEL:
+            if((configuration.category.value != 0x02) && 
+               ((adc_acquisition_number + 1) >= ADC_FILTER_NUMBER) &&
+               (calib_mode == 0))
+              ext_shut = 0;
+          
+            sample.sample_struct.adc_value_int = ReadADC();
+            if(sample.sample_struct.adc_value_int != 0)
+            {
+              sample.sample_struct.adc_value_int -= adc_offset;
+
+              adc_acquisition_number++;
+              if((adc_acquisition_number < ADC_FILTER_NUMBER))
+              {
+                adc_filtered += sample.sample_struct.adc_value_int;
+
+                an_channel = EXT1_AN_CHANNEL;
+                ConvertADC();
+              }
+              else
+              {
+                adc_acquisition_number = 0;
+                adc_filtered += sample.sample_struct.adc_value_int;
+                sample.sample_struct.adc_value_int = adc_filtered / ADC_FILTER_NUMBER;
+
+                adc_filtered = 0;
+
+                if(calib_mode == 0)
+                {
+                  // Se si tratta del sensore lvdt, allora il risultato lo devo pesare
+                  // con la tensione di alimentazione che acquisisco con ext2. Se
+                  // si tratta di un'altro sensore generico, allora salvo il dato
+                  sample.sample_struct.category = configuration.category.value;
+                  sample.sample_struct.date = time_by_rn131;
+                  sample.sample_struct.state = status_flags.byte;
+              
+                  winbond_return_value = winbond_data_load(sample.sample_array, sizeof(sample));
+
+                  if(winbond_return_value == 0)
+                  {
+                    configuration.eeprom_ptr_wr.value = eeprom_ptr_wr;
+                    configuration.eeprom_data_count.value = eeprom_data_count;
+                  }
+                  else if(winbond_return_value == -1)
+                    status_flags.bits.spi_bus_collision = 1;
+                  else if(winbond_return_value == -2)
+                    status_flags.bits.eeprom_error = 1;
+                  else if(winbond_return_value == -3)
+                    status_flags.bits.eeprom_error = 2;
+                }
+                else
+                {
+                  if(sample.sample_struct.adc_value_int < EXT1_CALIB_RANGE_MIN)
+                  {
+                    led_err = 1;
+                    led_no_err = 1;
+                  }
+                  else if(sample.sample_struct.adc_value_int > EXT1_CALIB_RANGE_MAX)
+                  {
+                    led_err = 1;
+                    led_no_err = 0;
+                  }
+                  else
+                  {
+                    led_err = 0;
+                    led_no_err = 1;
+                  }
+                }
+              }
+            }
+            break;
+
+          case EXT2_AN_CHANNEL:
+            if((adc_acquisition_number + 1) >= ADC_FILTER_NUMBER)
+              ext_shut = 0;
+          
+            sample.sample_struct.adc_value_int = ReadADC();
+
+            if(sample.sample_struct.adc_value_int != 0)
+            {
+              // compenso l'offset
+              sample.sample_struct.adc_value_int -= adc_offset;
+
+              adc_acquisition_number++;
+              if((adc_acquisition_number < ADC_FILTER_NUMBER))
+              {
+                adc_filtered += sample.sample_struct.adc_value_int;
+
+                an_channel = EXT2_AN_CHANNEL;
+                ConvertADC();
+              }
+              else
+              {
+                adc_acquisition_number = 0;
+                adc_filtered += sample.sample_struct.adc_value_int;
+                sample.sample_struct.adc_value_int = adc_filtered / ADC_FILTER_NUMBER;
+                adc_filtered = 0;
+
+                if(calib_mode == 0)
+                {
+                  sample.sample_struct.category = configuration.category.value + 1;
+                  sample.sample_struct.date = time_by_rn131;
+                  sample.sample_struct.state = status_flags.byte;
+
+                  winbond_return_value = winbond_data_load(sample.sample_array, sizeof(sample));
+
+                  if(winbond_return_value == 0)
+                  {
+                    configuration.eeprom_ptr_wr.value = eeprom_ptr_wr;
+                    configuration.eeprom_data_count.value = eeprom_data_count;
+                  }
+                  else if(winbond_return_value == -1)
+                    status_flags.bits.spi_bus_collision = 1;
+                  else if(winbond_return_value == -2)
+                    status_flags.bits.eeprom_error = 1;
+                  else if(winbond_return_value == -3)
+                    status_flags.bits.eeprom_error = 2;
+                }
+              }
+            }
+            break;
+
+          case CALIBRATION_AN_CHANNEL:
+            adc_offset = ReadADC();
+            break;
+          
+          default:
+            break;
+        }
+
+        adc_update = 0;
+     
+        // Se ho finito con le acquisizioni ripetute
+        if(adc_acquisition_number == 0)
+        {
+          if((configuration.category.value == 0x02) && (an_channel == EXT1_AN_CHANNEL) && (calib_mode == 0))
+          {
+            an_channel = EXT2_AN_CHANNEL;
+            SelChanConvADC(an_channel);
+          }
+          else
+          {
+            if(SSP2CON1bits.SSPEN == 1)
+            {
+              spi_close();
+            }
+        
+            an_channel = -1;
+            if(!T1CONbits.TMR1ON)
+              OSCCONbits.IDLEN = 0;
+            else
+              OSCCONbits.IDLEN = 1;
+          }
+        }
       }
+      
+      SLEEP();
     }
   }
 
@@ -1768,8 +2186,7 @@ void initialize_system(void)
   PORTG = 0;
 
   // init batt analog pin
-  adc_batt_enable_tris = OUTPUT_PIN;
-  adc_batt_enable = 1;
+  adc_batt_enable_tris = INPUT_PIN;
   
   // init adc
   // set all port to digital
@@ -1791,6 +2208,12 @@ void initialize_system(void)
   
   ext_shut_an_tris = OUTPUT_PIN;
   ext_shut_an_analog = 0;
+
+  _1_wire_eeprom_an_tris = INPUT_PIN;
+  _1_wire_eeprom_an_analog = 0;
+  _1_wire_eeprom_in_tris = INPUT_PIN;
+  _1_wire_eeprom_out_tris = OUTPUT_PIN;
+  _1_wire_eeprom_out = 0;
   
   // init led
   led_err_tris = OUTPUT_PIN;
@@ -1800,15 +2223,12 @@ void initialize_system(void)
   led_no_err = 0;
 
   // enable 3.3V
-  alim_3_3V_enable_tris = INPUT_PIN;
+  alim_3_3V_enable_tris = OUTPUT_PIN;
+  alim_3_3V_enable =  0;
   
   // init serial
-#ifdef CONFIGURE_MODE
-  uart2_tx_tris = INPUT_PIN;
-  SLEEP();
-#else
   uart2_tx_tris = OUTPUT_PIN;
-#endif
+  uart2_tx = 1;
   
   uart2_rx_tris = INPUT_PIN;
 
@@ -1824,29 +2244,19 @@ void initialize_system(void)
   i2c_sck_tris = INPUT_PIN;
   i2c_sda_tris = INPUT_PIN;
 
-#ifndef CONFIGURE_MODE
   uart2_init(0);
-#endif
-
-
 }
 
 /**
- * @todo aggiornare anche il giorno della settimana
+ * Ottiene il giorno e l'ora correnti ed applica un fattore di correzione per
+ * allineare la differenza tra la frequenza reale del clock e quella dell'orologio.
+ *
+ * @param error_sec  errore commesso ogni secondo in secondi.
+ *
+ * @remark La prima volta che si richiama questa funzione, viene salvato il valore
+ * del timer in formato unix, il quale sarà utilizzato per applicare la correzione
+ * dell'ora.
  */
-/*void user_timer_ms(void)
-{
-  static unsigned int msec = 0;
-  msec++;
-
-  if(msec >= 1000)
-  {
-    msec=0;
-
-    time_by_rn131++;
-  }
-}*/
-
 void update_date(float error_sec)
 {
   rtccTimeDate rtcc_time_date;
@@ -1869,9 +2279,10 @@ void update_date(float error_sec)
   time_by_rn131 = mktime(&date_structure);
 
   // ho bisogno di compensare l'errore commesso dal rtc dovuto ad un clock diverso
-  // da quello atteso. Siccome la frequenza è più piccola di quella prevista, un secondo
-  // durerà di meno, commettendo un errore in eccesso sulla data. Per questo devo
-  // sottrarre l'errore moltiplicato per i secondi passati
+  // da quello atteso. Siccome la frequenza tipica dell'oscillatore interno è più
+  // elevata dei 32768 Hz previsti, un secondo verrà conteggiato in anticipo
+  // commettendo un errore in eccesso sulla data. Per questo devo
+  // sottrarre l'errore moltiplicandolo per i secondi passati
   time_by_rn131 -= (unsigned long)((time_by_rn131 - time_by_rn131_start) * error_sec);
 }
 
@@ -1887,7 +2298,7 @@ char DecimalToBCD(int decimalByte)
 
 void message_load_uart(const char *message)
 {
-  char buffer[20];
+  char buffer[UART2_BUFFER_SIZE_TX];
   strcpy(buffer, message);
 
   uart2_buffer_tx_seq_load(buffer, strlen(buffer));
@@ -1896,6 +2307,7 @@ void message_load_uart(const char *message)
 int ping(void)
 {
   static int ping_status = 0;
+  int ping_result = 0;
 
   switch(ping_status)
   {
@@ -1908,15 +2320,24 @@ int ping(void)
 
           rn131.cmd_mode_rqst = 1;
         }
+        break;
       }
       else
         ping_status = 1;
-      break;
 
     case 1:
-      message_load_uart("ping dgoogle.it\rexit\r");
-      rn131.cmd_mode_exit_rqst = 1;
-      ping_status = 2;
+      ping_result = ping_send();
+      if(ping_result == 1)
+      {
+        message_load_uart("exit\r");
+        rn131.cmd_mode_exit_rqst = 1;
+        ping_status = 2;
+      }
+      else if(ping_result == -1)
+      {
+        ping_status = 0;
+        return -1;
+      }
       break;
 
     case 2:
@@ -1924,6 +2345,40 @@ int ping(void)
       {
         ping_status = 0;
         return 1;
+      }
+      else if(rn131.cmd_mode_exit_rqst == 0)
+      {
+        message_load_uart("exit\r");
+        rn131.cmd_mode_exit_rqst = 1;
+      }
+      break;
+  }
+
+  return 0;
+}
+
+int ping_send(void)
+{
+  static int ping_status = 0;
+
+  switch(ping_status)
+  {
+    case 0:
+      message_load_uart("ping dgoogle.it\r");
+      
+      ping_status = 1;
+      break;
+
+    case 1:
+      if(rn131_parse_message(buffer, "Ping try"))
+      {
+        ping_status = 0;
+        return 1;
+      }
+      else if(rn131_parse_message(buffer, "ERR: "))
+      {
+        ping_status = 0;
+        return -1;
       }
       break;
   }
@@ -1934,6 +2389,7 @@ int ping(void)
 int download_configuration_ftp(void)
 {
   static int config_req_sent = 0;
+  int ping_result = 0;
 
   if(rn131.cmd_mode == 0)
   {
@@ -1946,14 +2402,31 @@ int download_configuration_ftp(void)
   }
   else if(config_req_sent == 0)
   {
-    message_load_uart("set dns backup babaracus.no-ip.org\r");
-    message_load_uart("set ftp user pi\r");
-    message_load_uart("set ftp pass raspberry\r");
-    message_load_uart("set ftp remote 21\r");
-    message_load_uart("set ftp dir /var/www\r");
-    message_load_uart("ftp update wifly_config.cfg\r");
+    ping_result = ping_send();
+    
+    if(ping_result == 1)
+    {
+      message_load_uart("set dns backup www.spinitalia.com\r");
+      message_load_uart("set ftp user Spinitalia_ftp\r");
+      message_load_uart("set ftp pass aqquario1234\r");
+      message_load_uart("set ftp remote 21\r");
+      message_load_uart("set ftp dir ./\r");
+      message_load_uart("set ftp addr 0\r");
+      message_load_uart("ftp update wifly_config.cfg\r");
 
-    config_req_sent = 1;
+      /*message_load_uart("set dns backup babaracus.no-ip.org\r");
+      message_load_uart("set ftp user pi\r");
+      message_load_uart("set ftp pass raspberry\r");
+      message_load_uart("set ftp remote 21\r");
+      message_load_uart("set ftp dir /var/www\r");
+      message_load_uart("ftp update wifly_config.cfg\r");*/
+
+      config_req_sent = 1;
+    }
+    else if(ping_result == 0)
+      return 0;
+    else
+      return -1;
   }
   else
   {
@@ -1961,9 +2434,19 @@ int download_configuration_ftp(void)
     {
       message_load_uart("load spin_c\r");
       message_load_uart("save\r");
+      message_load_uart("reboot\r");
+
+      rn131_reset_flag();
+      communication_ready = 0;
+      tcp_start_timer_flag = -1;
 
       rn131.cmd_mode_reboot_rqst = 1;
       return 1;
+    }
+    else if(rn131_parse_message(buffer, "FTP timeout"))
+    {
+      config_req_sent = 0;
+      return -1;
     }
   }
 
@@ -1998,4 +2481,41 @@ void circular_buffer_save(long start_address)
 {
   for(eeprom_addr_count = 0; eeprom_addr_count < sizeof(configuration.bytes); eeprom_addr_count++)
     Write_b_eep(start_address + eeprom_addr_count, configuration.bytes[eeprom_addr_count]);
+
+  Write_b_eep(start_address + eeprom_addr_count, time_by_rn131 & 0x0000ff);
+  Write_b_eep(start_address + eeprom_addr_count + 1, (time_by_rn131 >> 8) & 0x0000ff);
+  Write_b_eep(start_address + eeprom_addr_count + 2, time_by_rn131 >> 16);
+  Write_b_eep(start_address + eeprom_addr_count + 3, time_by_rn131 >> 24);
+
+  Write_b_eep(start_address + eeprom_addr_count + 4, stc3100_voltage.integer & 0x00ff);
+  Write_b_eep(start_address + eeprom_addr_count + 5, (stc3100_voltage.integer >> 8) & 0x00ff);
+}
+
+/**
+ * Resetta le variabili riguardanti il modulo rn131, toglie l'alimentazione
+ * secondaria e manda il modulo in sleep.
+ */
+void sleep_enter(void)
+{
+  // Finisco di acquisire i dati dalla seriale, nel caso ce ne fossero
+  if(UART2_INTERRUPT_RX == 0)
+    while(uart2_buffer_rx_load());
+
+  // scarico i buffer circolari
+  uart2_flush_buffers();
+
+  rn131_start_flag = 0;
+
+  adc_batt_enable_tris = OUTPUT_PIN;
+  adc_batt_enable = 1;
+  __delay_us(10);
+  adc_batt_enable = 0;
+  adc_batt_enable_tris = INPUT_PIN;
+  
+  alim_3_3V_enable =  0;
+  rn131_reset_flag();
+  communication_ready = 0;
+  tcp_start_timer_flag = -1;
+
+  SLEEP();
 }

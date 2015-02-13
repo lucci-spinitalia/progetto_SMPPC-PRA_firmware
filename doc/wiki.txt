@@ -29,7 +29,7 @@
  * \section principle_of_function_sec Principio di funzionamento
  *
  * Il modulo wifly è un sistema di acquisizione wireless per il monitoraggio a lungo termine di strutture edili. Al suo interno presenta un processore RISC a bassissimo consumo 
- * che acquisisce i dati dai sensori esterni e li immagazzina nella memoria interna. Grazie al suo sistema di acquisizione analogico/digitale a 10 bit, è facilmente interfacciabile con
+ * che acquisisce i dati dai sensori esterni e li immagazzina nella memoria interna. Grazie al suo sistema di acquisizione analogico/digitale a 12 bit, è facilmente interfacciabile con
  * una vasta gamma di sensori presenti sul mercato, rendendo possibile il monitoraggio contemporaneo di diverse grandezze. La batteria al litio interna lo rende avulso da qualsiasi 
  * collegamento fisico, oltre che completamente indipendente per lunghi periodi di tempo (dipendenti dal periodo di acquisizione preimpostato).
  * Configurare questo modulo di acquisizione è estremamente semplice ed intuitivo: infatti può creare una propria rete wifi a cui è possibile collegarcisi con qualsiasi dispositivo e la modifica 
@@ -44,25 +44,27 @@
  * (dispositivo di misura wireless), il trasduttore a cavallo della fessura da monitorare ed il materiale d'incollaggio alla superficie di supporto. 
  * Quest'ultimo può cambiare sensibilmente a seconda del tipo di superfice su cui viene applicato il dispositivo, sia per il materiale usato che per la tecnica di fissaggio.
  * 
- * Una volta che il dispositivo di monitoraggio viene attivato, si collega automaticamente all'access point impostato in una prima fase di configurazione, ottenendo 
- * l'indirizzo ip tramite il server DHCP predefinito. In questo modo è possibile collegare più moduli nella stessa area, senza preoccuparsi di creare conflitti sulla rete. Appena 
- * viene campionato un sensore, il dato viene spedito al server centrale, come mostrato nel seguente schema architetturale esemplificativo.
+ * Una volta che il dispositivo di monitoraggio viene attivato, cercherà di collegarsi all'ultima rete impostata. Nel caso in cui l'associazione non avvenga
+ * entro un certo tempo limite, si attiverà automaticamente la modalità Access Point e sarà data la possibilità all'utente di selezionare la rete interessata
+ * attraverso una semplice ed intuitiva pagina web. La scheda di monitoraggio supporta l'acquisizione dell'indirizzo IP tramite DHCP, esultando del tutto l'utente
+ * a tener traccia degli IP già assegnati, potento così collegare più dispositivi senza difficoltà.
+ * I dati vengono campionati ad intervalli regolari e spediti a blocchi seguendo un'altra scala temporale. Tutte le tempistiche di acquisizione ed invio sono
+ * personalizzabili per coprire tutte le possibili esigenze di misura: in questo modo è possibile eseguire monitoraggi statici a lunga durata, dove il tempo di campionamento è
+ * nell'ordine delle ore, che monitoraggi dinamici con tempi di campionamento nell'ordine delle centinaia di millisecondi.  
+ * Le informazioni che passano tramite la wifi vengono raccolte da un server centrale remoto che si occupera di immagazzinarle in modo adeguato. Di seguito
+ * viene mostrato uno schema architetturale esemplificativo.
  *
  * \image html "schema architetturale.png" "schema architetturale"
+ * 
  *
- * I tempi di campionamento e di invio dei dati sono configurabili dall'operatore attraverso degli appositi messaggi, in modo che il dispositivo risulti flessibile
- * di fronte ai vari scenari operativi ed alle esigenze contingenti. E' quindi possibile eseguire sia dei monitoraggi statici a lunga durata, dove il tempo di campionamento è
- * nell'ordine delle ore, che monitoraggi dinamici con tempi di campionamento nell'ordine delle centinaia di millisecondi.
- *
- * Le sue caratteristiche salienti sono riassunte di seguito:
+ * Le caratteristiche salienti del sistema sono riassunte di seguito:
  *  - modulo a bassissimo consumo;
  *  - memoria interna da 8 Mb;
- *  - batteria al litio interna ricarciabile;
  *  - configurazione semplificata tramite pagina web;
  *  - connessione automatica ad una rete wifi predefinita;
  *  - possibilità di impostare i tempi di acquisizione e di invio dei dati tramite connessione TCP/IP;
  *  - disponibili kit di ancoraggio per diverse superfici;
- *  - convertitore A/D da 10 bit.
+ *  - convertitore A/D da 12 bit.
  *
  * \subsection internal_block_sec Schema architetturale del modulo di  monitoraggio
  * Il dispositivo di acquisizione può essere suddiviso logicamente in due parti:
@@ -98,7 +100,7 @@
  * Il modulo di acquisizione comunica con l’host attraverso il protocollo http integrato nell’interfaccia wi-fi. Lo scambio dei messaggi avviene con una richiesta GET inviata 
  * dal modulo wi-fi, il quale passa i dati tramite il parametro “DATA”.
  *
- * <center> \e GET /index.php?DATA=<messaggio>*</center>
+ * <center> \e GET /insert.php?DATA=<messaggio>*</center>
  *
  * La comunicazione viene instaurata quando:
  *  - ci sono dei dati acquisiti pronti per essere inviati;
@@ -122,7 +124,7 @@
  *
  * dove:
  *  - MAC: è l'indirizzo MAC del dispositivo wifi;
- *  - Data ed ora: rappresenta l'ora UTC di quando è stato memorizzato il dato proveniente dal sensore in formato UNIX (numero di secondi trascorsi dal 1 Gennaio 1970);
+ *  - Data ed ora: rappresenta l'ora di quando è stato memorizzato il dato proveniente dal sensore in formato UNIX (numero di secondi trascorsi dal 1 Gennaio 1970);
  *  - Categoria: rappresenta il tipo di sensore acquisito;
  *  - Stato interno: informazione sullo stato del modulo di acquisizione;
  *  - Valore sensore: dato acquisito dal sensore con rappresentazione esadecimale in formato ASCII;
@@ -136,12 +138,18 @@
  * 
  *  <center> 
  *
- *  Parametri       | Descrizione                 | Conversione
- * :---------------:|:---------------------------:|:-------------:
- *  1               | Temperatura                 | \f$ \frac {value \times 0,0005 - 0,424} {0,00625} \f$
- *  2               | Trasformatore differenziale | \f$ \frac {5 - value \times 0.003845} {0,75} \f$
+ *  Categoria       | Descrizione                               | Conversione
+ * :---------------:|:-----------------------------------------:|:-------------:
+ *  1               | Temperatura                               | \f$ \frac {value \times 0,0005 - 0,424} {0,00625} \f$
+ *  2               | Trasformatore differenziale               | \f$ \frac {5 - value \times 0.003835} {7.5}  \times {Trasformatore_{alim}}\f$
+ *  3               | Alimentazione Trasformatore differenziale | \f$ {value \times 0.0055}\f$
  *
  *  </center>
+ *
+ * Nella formula del Trasformatore differenziale è presente il termine "Trasformatore_alim" che rappresenta la tensione di alimentazione dello stesso.
+ * Questo valore può essere estrapolato dal messaggio di categoria 3 che viene inviato subito dopo quello di categoria 2. Per questo sensore, la tensione
+ * nominale di alimentazione è di 10V: nel caso non si voglia compensare l'errore dovuto alle variazioni dell'alimentatore, considerare Trasformatore_alim
+ * pari a 10.
  *
  * \subsubsection message_format_internal_sec Lo stato interno
  * Il modulo di acquisizione e controllo tiene traccia di alcuni eventi rilevanti ed invia queste informazioni attravero il campo "Stato interno". Il dato in 
@@ -157,6 +165,7 @@
  *  4               | Reset inatteso
  *  5               | Overflow sulla seriale
  *  6               | EEPROM non identificata
+ *  7               | Ora non aggiornata
  *
  *  </center>
  *
@@ -167,7 +176,7 @@
  *
  * Il corrispettivo binario sarà di:
  * \code
- * 010001
+ * 0010001
  * \endcode
  *
  * Associando le posizioni con la tabella, significa che è la batteria interna è quasi scarica e che si è verificato un evento di overflow sulla seriale.
@@ -181,18 +190,19 @@
  *
  *
  * <center>  
- *      Messaggio         |  Descrizione                                                                           | Default 
- *   :-------------------:|:---------------------------------------------------------------------------------------|:--------:
- *     web_server         | Avvia il web server del modulo rn131                                                   | -
- *     get_config         | Ottiene la configurazione corrente del modulo di acquisizione                          | -
- *     get_batt           | Ottiene il livello di batteria in Volt                                                 | -
- *     set_config         | Salva le impostazioni nella memeoria interna                                           | -
- *     set_sleep=xx       | Imposta il tempo di sleep del dispositivo in secondi                                   | 60
- *     set_category=xx    | Imposta la categoria del dato                                                          | 0
- *     set_adc=xx         | Imposta il tempo di campionamento a "xx" centesimi di secondo                          | 1000 hs
- *     set_data_delay=xx  | Imposta il tempo di attesa da quando si è connesso all'host a quando invia i dati      | 1000 hs
- *     set_batt_warn=x.xx | Livello batteria quasi scarica                                                         | 3.2 V
- *     set_batt_min=x.xx  | Livello batteria scarica                                                               | 3.0 V
+ *      Messaggio         |  Descrizione                                                                                      | Default 
+ *   :-------------------:|:--------------------------------------------------------------------------------------------------|:--------:
+ *     web_server         | Avvia il web server                                                                               | -
+ *     calib              | Avvia la calibrazione del sensore                                                                 | -
+ *     get_config         | Ottiene la configurazione corrente del modulo di acquisizione                                     | -
+ *     get_batt           | Ottiene la carica consumata in mAh                                                                | -
+ *     set_config         | Salva le impostazioni correnti nella memoria interna.                                             | -
+ *     set_sleep=xx       | Imposta il tempo di sleep del dispositivo in secondi                                              | 300
+ *     set_category=xx    | Imposta la categoria del dato                                                                     | 2
+ *     set_adc=xx         | Imposta il tempo di campionamento a "xx" millisecondi                                             | 300000
+ *     set_data_delay=xx  | Imposta il tempo di attesa da quando si è connesso all'host a quando invia i dati in secondi      | 10
+ *     set_batt_warn=x.xx | Livello batteria quasi scarica                                                                    | 3.2 V
+ *     set_batt_min=x.xx  | Livello batteria scarica                                                                          | 3.0 V
  *
  *  </center>
  *
@@ -201,14 +211,27 @@
  * a cui ci si può collegare. Accedendo poi alla pagina <a href="http://192.168.1.1/web_config.html">http://192.168.1.1/web_config.html</a> è possibile selezionare la rete di default a cui il modulo si collega ed accedere al 
  * terminale per cambiare i parametri non implementati nei messaggi di configurazione.
  *
+ * \subsubsection calib_sec Messaggio calib
+ * Quando si entra nella modalità di calibrazione si ha la possibilità di aggiustare i parametri meccanici o elettronici del sensore in modo che il 
+ * segnale d'uscita rientri in un valore predefinito. Il valore di riferimento cambia con la categoria associata al sensore.
+ *
+ * Per quanto riguarda il Trasformatore differenziale, la procedura di zero consiste nello spostare la parte sensibile rispetto alla contropiastra
+ * agendo su delle viti posti nella parte anteriore.
+ * Per segnalare all'utente il discostamento dal valore ottimo, viene utilizzato il led di stato: quando l'indicatore è rosso, vuol dire che si è sotto 
+ * la soglia, quando è arancione ci si trova sopra la soglia, mentre il verde indica che il sensore è tarato entro il range prestabilito.
+ * Una volta che il valore d'uscita rientra nei limiti, il sistema tornerà al suo stato normale dopo alcuni secondi. Esiste anche un tempo limite 
+ * oltre il quale il sistema torna comunque nella modalità normale.
+ *
+ *
  * \subsubsection get_config_sec Messaggio get_config
- * Tramite questo comando si ottiene attraverso una richiesta GET i parametri attuali di configurazione, separati da una ",".
+ * Tramite questo comando il modulo invia i parametri attuali di configurazione, separati da una ",", utilizzando una richiesta GET.
  *
  * <center> 
  *
  *  Parametri       | Descrizione
  * :---------------:|:-------------
- *  adc=xxx         | Tempo di campionamento in centesimi di secondo
+ *  sleep=xxx       | Intervallo di risveglio del modulo wifi
+ *  adc=xxx         | Tempo di campionamento in millesimi di secondo
  *  category=xx     | Categoria del dato
  *  data_delay=xx   | Tempo di attesa da quando ci si connette all'host a quando si spediscono i dati letti dall'eeprom
  *  batt_warn=x.xx  | Livello sotto il quale la batteria è considerata quasi scarica e viene impostato il rispettivo flag nella sezione "Stato interno" del messaggio inviato all'host
@@ -217,25 +240,26 @@
  *  </center>
  *
  * \subsubsection get_batt_sec Messaggio get_batt
- * Si ottiene il livello attuale della batteria attraverso una richiesta GET avente come parametro "batt" delimitato da ",". Il dato ricevuto è una stringa ascii
- * nel formato x.xx rappresentante il livello di tensione in V.
+ * Si ottiene il livello attuale della batteria attraverso una richiesta GET, avente come parametro "batt" delimitato da ",". Il dato ricevuto è una stringa ascii
+ * nel formato x.xx rappresentante la carica consumata in mAh.
  *
  * \subsubsection set_sleep_sec Messaggio set_sleep
- * Imposta il tempo di sleep del dispositivo wifi in secondi.
+ * Imposta l'intervallo di accensione del modulo wifi.
  *
  * \subsubsection set_cat_sec Messaggio set_category
  * Imposta la categoria del dato. Il parametro passato deve essere uno dei seguenti:
  * 
  *  <center> 
  *
- *  Parametri       | Descrizione                 | Conversione
- * :---------------:|:---------------------------:|:-------------:
- *  1               | Temperatura                 | \f$ \frac {value \times 0,32 - 0,424} {0,00625} \f$
- *  2               | Trasformatore differenziale | -
+ *  Categoria       | Descrizione                               
+ * :---------------:|:-----------------------------------------:
+ *  1               | Temperatura                               
+ *  2               | Trasformatore differenziale               
+ *  3               | Alimentazione Trasformatore differenziale 
  *
  *  </center>
  *
- *  Il dato passato è un intero rappresentante il valore esadecimale letto direttamente dal convertitore, in formato ascii. Per ottenere il dato nell'unità di misura corretta è necessario
+ * Il dato passato è un intero rappresentante il valore esadecimale letto direttamente dal convertitore, in formato ascii. Per ottenere il dato nell'unità di misura corretta è necessario
  * eseguire delle operazioni dipendenti dalla categoria.
  *
  *

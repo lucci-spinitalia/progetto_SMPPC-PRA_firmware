@@ -29,7 +29,7 @@
 /** I N C L U D E S ********************************/
 
 /** O S C I L L A T O R  ***************************/
-#define FOSC_MHZ	16000000
+#define FOSC_HZ	16000000
 
 #ifndef _XTAL_FREQ
 #define _XTAL_FREQ 16000000
@@ -58,6 +58,7 @@
 #define uart1_rs485_tx_enable LATDbits.LATD7
 
 #define uart2_tx_tris TRISGbits.TRISG1
+#define uart2_tx LATGbits.LATG1
 #define uart2_rx_tris TRISGbits.TRISG2
 
 /** ADC             ********************************/
@@ -84,6 +85,15 @@
 #define ext_shut_an_tris TRISAbits.TRISA5
 #define ext_shut_an_analog ANCON0bits.ANSEL4
 #define ext_shut      PORTAbits.RA5
+
+#define _1_wire_eeprom_an_tris TRISFbits.TRISF1
+#define _1_wire_eeprom_an_analog ANCON0bits.ANSEL6
+#define _1_wire_eeprom_an      PORTFbits.RF1
+
+#define _1_wire_eeprom_in_tris TRISDbits.TRISD2
+#define _1_wire_eeprom_in      PORTDbits.RD2
+#define _1_wire_eeprom_out_tris TRISDbits.TRISD1
+#define _1_wire_eeprom_out      LATDbits.LATD1
 
 /** L E D           ********************************/
 #define led_err_tris TRISEbits.TRISE4

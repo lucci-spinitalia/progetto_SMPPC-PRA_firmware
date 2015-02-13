@@ -3,6 +3,7 @@ dist/
 doc/html/
 doc/latex/
 doc/*.pdf
+1-Wire App Note Source Code/
 nbproject/
 funclist
 l.obj

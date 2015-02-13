@@ -43,7 +43,6 @@ struct rn131_struct
   char cmd_mode_rqst; /**< flag di richiesta abilitazione modalità comandi*/
   char cmd_mode_exit_rqst; /**< richiesta di uscita dalla modalità comandi*/
   char cmd_mode_reboot_rqst; /**< richieta riavvio modulo*/
-  char cmd_mode_sleep_rqst; /**< richiesta modalità sleep */
   char cmd_http_rqst; /**< richiesta di esecuzione comando dal server http */
   char cmd_http[256]; /**< comando dal server http */
   char time_set_rqst; /**< richiesta di sincronizzazione del tempo con il server ntp*/
@@ -55,13 +54,14 @@ struct rn131_struct
   unsigned cmd_mode :1; /**< indica se ci si trova in modalità comandi*/
   unsigned time_set :1; /**< tempo sincronizzato correttamente con il server ntp*/
   unsigned ap_mode :1; /**< indica se si trova in modalità access point */
+  unsigned web_server_mode :1; /**< indica se si trova in modalità web server. Deve essere resettato dall'utente */
 } rn131; /**< Rappresenta lo stato e le richieste per il modulo rn131*/
 
 /** P R O T O T Y P E S ****************************/
 char rn131_connection_init(char *buffer, int rn131_message_length);
 char rn131_http_response(char *message);
 char rn131_command_show_time(char *message, time_t *time_by_rn131);
-void rn131_sleep(void);
+void rn131_reset_flag(void);
 char rn131_parse_message(char *buffer, const char *message);
 
 

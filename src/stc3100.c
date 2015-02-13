@@ -16,7 +16,7 @@
 void stc3100_write(unsigned char addr , unsigned char reg, unsigned char value)
 {
   unsigned char i2c_data = 0; /**< Valore letto dalla i2c */
-  unsigned char i2c_status = 0; /**< Stato del bus i2c */
+  signed char i2c_status = 0; /**< Stato del bus i2c */
 
   do
   {
@@ -93,7 +93,7 @@ void stc3100_write(unsigned char addr , unsigned char reg, unsigned char value)
 void stc3100_get(unsigned char addr , unsigned char reg, unsigned char byte_to_read, unsigned char *stc3100_var)
 {
   unsigned char i2c_data = 0; /**< Valore letto dalla i2c */
-  unsigned char i2c_status = 0; /**< Stato del bus i2c */
+  signed char i2c_status = 0; /**< Stato del bus i2c */
 
   do
   {

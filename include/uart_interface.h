@@ -53,7 +53,7 @@ static unsigned char const UART2_CONFIG = (USART_TX_INT_OFF & USART_RX_INT_OFF &
 static const unsigned char  UART1_BAUD_CONFIG = ((BAUD_16_BIT_RATE | BAUD_AUTO_OFF | BAUD_WAKEUP_OFF) | BAUD_IDLE_RX_PIN_STATE_HIGH | BAUD_IDLE_TX_PIN_STATE_HIGH);
 static const unsigned char  UART2_BAUD_CONFIG = (BAUD_16_BIT_RATE | BAUD_AUTO_OFF | BAUD_WAKEUP_OFF | BAUD_IDLE_RX_PIN_STATE_HIGH | BAUD_IDLE_TX_PIN_STATE_HIGH);
 static const unsigned char  UART1_CONFIG = (USART_TX_INT_OFF | USART_RX_INT_OFF | USART_BRGH_HIGH | USART_CONT_RX | USART_EIGHT_BIT | USART_ASYNCH_MODE);
-static const unsigned char  UART2_CONFIG = (USART_TX_INT_OFF | USART_RX_INT_OFF | USART_BRGH_HIGH | USART_CONT_RX | USART_EIGHT_BIT | USART_ASYNCH_MODE);
+static const unsigned char  UART2_CONFIG = (USART_TX_INT_OFF | USART_RX_INT_ON | USART_BRGH_HIGH | USART_CONT_RX | USART_EIGHT_BIT | USART_ASYNCH_MODE);
 
 #endif
 
@@ -68,12 +68,12 @@ static const unsigned char  UART2_CONFIG = (USART_TX_INT_OFF | USART_RX_INT_OFF 
 
 // Error code
 #define BUFFER_RX_OVERFLOW 0x11
-#define FRAME_ERROR 0x12
+#define FRAME_ERROR_CODE 0x12
 #define BUFFER_RX_MICRO_OVERFLOW 0x13
 
 /** M A C R O     **********************************/
-#define uart1_open(baud_rate)	Open1USART(UART1_CONFIG, uart1_buad_rate_set(baud_rate, FOSC_MHZ))
-#define uart2_open(baud_rate)	Open2USART(UART2_CONFIG, uart2_buad_rate_set(baud_rate, FOSC_MHZ))
+#define uart1_open(baud_rate)	Open1USART(UART1_CONFIG, uart1_buad_rate_set(baud_rate, FOSC_HZ))
+#define uart2_open(baud_rate)	Open2USART(UART2_CONFIG, uart2_buad_rate_set(baud_rate, FOSC_HZ))
 #define uart1_close()			Close1USART()
 #define uart2_close()			Close2USART()
 
@@ -146,7 +146,7 @@ unsigned int uart2_buad_rate_set(unsigned long baud_rate, long freq_Hz);
 
 void uart2_tsr_poll(void); // Return TSR register's value
 
-void uart2_isr(void);					// called from ISR from the main program
+int uart2_isr(void);					// called from ISR from the main program
 // initialization of uart module
 void uart2_init(unsigned char rs485_enable);
 // return error message

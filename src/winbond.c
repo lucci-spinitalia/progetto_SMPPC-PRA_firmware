@@ -9,11 +9,12 @@
 
 #include <timers.h>
 #include <stdlib.h>
+#include <string.h>
 
-unsigned char eeprom_at_work; /**< indica quando si stanno compiendo delle operazioni sull'eeprom*/
-unsigned long eeprom_ptr_wr;
-unsigned long eeprom_ptr_send;
-unsigned long eeprom_data_count;
+unsigned char eeprom_at_work = 0; /**< indica quando si stanno compiendo delle operazioni sull'eeprom*/
+unsigned long eeprom_ptr_wr = 0;
+unsigned long eeprom_ptr_send = 0;
+unsigned long eeprom_data_count = 0;
 
 /**
  * Ottiene il manufacturer id ed il device id.
@@ -577,7 +578,7 @@ unsigned long winbond_empty_space(void)
  *
  * @param data array di byte da inviare
  * @param data_bytes numero di byte da inviare
- * @return 0: successo -1: fallimento
+ * @return 0: successo -1: errore di collisione -2: eeprom piena -3: dato inconsistente
  * @remark La funzione si occupa di cancellare il settore su cui si va
  * a scrivere, a patto che il puntatore passi almeno una volta sulla prima locazione
  * dello stesso. Visto che i dati sono scritti a multipli di pagina, l'unica
@@ -585,6 +586,9 @@ unsigned long winbond_empty_space(void)
  * puntatore ::eeprom_ptr_wr viene inizializzato nel mezzo di un settore che
  * non è stato precedentemente formattato. Questo potrebbe portare ad un'errata
  * scrittura dei dati.
+ * Il numero massimo di dati che possono essere scritti con una singola chiamata
+ * della funzione sono pari alla dimensione dell'int, ovvero 2^16, in quanto questo
+ * è il tipo del parametro d'ingresso che indica il numero di byte da scrivere.
  */
 int winbond_data_load(unsigned char *data, int data_bytes)
 {
@@ -593,7 +597,10 @@ int winbond_data_load(unsigned char *data, int data_bytes)
   unsigned short long sector_address;
   unsigned short long data_count = 0; /**< numero di elementi che sono stati scritti tra quelli passati alla funzione */
   int data_to_write = 0;
+  int data_to_check = 0; /**< numero di byte da verificare dopo la scrittura */
+  int data_checked = 0;  /**< numero di byte verificati */
   int empty_space = 0;
+  unsigned char data_check[64];
 
   // imposto il flag di operazione su memeoria che consente di bloccare tutte
   // le istruzioni di sleep
@@ -645,16 +652,44 @@ int winbond_data_load(unsigned char *data, int data_bytes)
       data_to_write = empty_space;
     else
       data_to_write = data_bytes - data_count;
+    
+    // inizializzo la variabile data_to_check per non sforare l'array data_check
+    if((data_to_write - data_checked) < 64)
+      data_to_check = data_to_write;
+    else
+      data_to_check = 64;
 
     if(winbond_page_program(&data[data_count], data_to_write, eeprom_ptr_wr) > -1)
     {
-      data_count += data_to_write;
-      eeprom_ptr_wr += data_to_write;
+      while(data_checked < data_to_write)
+      {
+        if(winbond_data_read(data_check, data_to_check, eeprom_ptr_wr) == 0)
+        {
+          data_checked += data_to_check;
 
-      if(eeprom_ptr_wr == (unsigned short long)EEPROM_SIZE)
-        eeprom_ptr_wr = 0;
+          if(memcmp(&data[data_count], data_check, data_to_write) == 0)
+          {
+            // inizializzo la variabile data_to_check per non sforare l'array data_check
+            if((data_to_write - data_checked) < 64)
+              data_to_check = data_to_write;
+            else
+              data_to_check = 64;
 
-      eeprom_data_count += data_to_write;
+            data_count += data_to_write;
+            eeprom_ptr_wr += data_to_write;
+
+            if(eeprom_ptr_wr == (unsigned short long)EEPROM_SIZE)
+              eeprom_ptr_wr = 0;
+
+            eeprom_data_count += data_to_write;
+          }
+          else
+          {
+            eeprom_at_work = 0;
+            return -3;
+          }
+        }
+      }
     }
     else
     {
