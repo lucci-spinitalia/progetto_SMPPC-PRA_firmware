@@ -1,0 +1,10 @@
+Nel momento in cui si fanno acquisizioni ripetute con l'adc la frequenza massima di campionamento è di:
+
+   fmax@16MHz = 6.9kHz
+   fmax@64MHz = 16kHz
+   
+In questo caso l'adc ha campionato 10 campioni uno dopo l'altro, senza alcuna interferenza di qualche altro modulo. Per misurare il periodo per 
+ogni acquisizione è stata decommentata la variabile ADC_TEMP_TEST, che commuta la porta RF1 del micro alla fine di ogni acquisizione. La commutazione
+viene eseguita soltanto dopo che è stato ricevuto l'interrupt di fine acquisizione ed è stato prelevato il valore dal registro interno dentro il
+main. Infatti, il cambiamento della frequenza di campionamento in relazione a quella del clock primario è dovuta principalmente ad un'esecuzione più
+veloce del codice nel main tra un'acquisizione e l'altra.

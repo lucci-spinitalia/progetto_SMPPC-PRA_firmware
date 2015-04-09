@@ -27,13 +27,13 @@ extern "C" {
  * 0x7FFFFF).
  *
  */
-#define EEPROM_SIZE 0x8000000UL
+#define EEPROM_SIZE 0x800000UL
 
 /** S H A R E D  V A R I A B L E S  ****************/
-extern unsigned char eeprom_at_work; /**< indica quando si stanno compiendo delle operazioni sull'eeprom*/
-extern unsigned long eeprom_ptr_wr;
-extern unsigned long eeprom_ptr_send;
-extern unsigned long eeprom_data_count;
+extern unsigned char flash_at_work; /**< indica quando si stanno compiendo delle operazioni sull'eeprom*/
+extern unsigned long flash_ptr_wr;
+extern unsigned long flash_ptr_send;
+extern unsigned long flash_data_count; /**< indica il numero di byte caricati nella flash */
 
 /** S T R U C T S **********************************/
 
@@ -84,7 +84,8 @@ int winbond_page_program(unsigned char *data, int data_bytes, unsigned short lon
 int winbond_data_read(unsigned char *data, unsigned short long data_bytes, unsigned short long address);
 unsigned long winbond_empty_space(void);
 int winbond_data_load(unsigned char *data, int data_bytes);
-unsigned short long winbond_data_send(unsigned char *data, int max_data_bytes);
+long winbond_data_send(unsigned char *data, unsigned short long max_data_bytes);
+void update_circular_send_buffer(long data_sent);
 int winbond_powerdown(void);
 int winbond_release_powerdown(void);
 

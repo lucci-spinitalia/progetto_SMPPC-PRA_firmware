@@ -60,12 +60,17 @@ unsigned int uart2_buffer_tx_rd_ptr;	// read position to place data from
 										// buffer to TXREG
 unsigned char uart1_rs485_tx_count;
 
+int uart1_buffer_rx_bookmark = 0;
+
 unsigned int uart2_buffer_rx_data_cnt;	// number of byte received
 unsigned int uart2_buffer_rx_wr_ptr;	// write position in rx buffer
 unsigned int uart2_buffer_rx_rd_ptr;	// read position by the application
 
 unsigned char uart2_rs485_enable;  // flag to enable rs485 buffer managment
 unsigned char uart2_rs485_tx_count;
+
+int uart2_buffer_rx_bookmark = 0; /**< segna a che punto sono arrivato nella ricerca di un carattere nel buffer di ricezione */
+
 /**************************************************
 * Function name		: void uart1_init(unsigned char rs485_enable)
 *   rs485_enable    : flag to enable rs485 buffer managment
@@ -383,7 +388,7 @@ unsigned char uart1_buffer_send(void)
 unsigned char uart2_buffer_send(void)
 {
 
-  if( !uart2_status.buffer_tx_empty )
+  if(!uart2_status.buffer_tx_empty)
   {
 
     if(UART2_INTERRUPT_TX == 0)
@@ -474,6 +479,8 @@ void uart1_flush_buffers(void)
   uart1_buffer_rx_wr_ptr = 0;
 
   uart1_rs485_tx_count = 0;
+
+  uart1_buffer_rx_bookmark = 0;
 }
 
 /**************************************************
@@ -516,6 +523,7 @@ void uart2_flush_buffers(void)
   uart2_buffer_rx_rd_ptr = 0;
 
   uart2_rs485_tx_count = 0;
+  uart2_buffer_rx_bookmark = 0;
 }
 
 /**************************************************
@@ -865,8 +873,8 @@ int uart2_buffer_read_filtered(char *data, char token)
   return length_to_write;
 }
 
-//TODO: create uart1_buffer_read_filtered
-//TODO: creare la variabile bookmark anche in uartx_buffer_read_filtered
+//TODO: create uart1_buffer_read_multifiltered
+//TODO: creare la variabile bookmark anche in uartx_buffer_read_multifiltered
 /**************************************************
 * Function name		: int uart2_buffer_read_multifiltered(char *data, char *token, int token_number)
 *	return          : 0 = buffer empty
@@ -893,7 +901,6 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
   char *token_winner = NULL;
   char *null_character = NULL;
   int token_count = 0;
-  static int bookmark = 0;
 
   if(uart2_status.buffer_rx_empty)
     return 0;
@@ -901,27 +908,29 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
   if(token_number > 10)
     return -1;
 
-  if((uart2_buffer_rx_rd_ptr + bookmark) >= UART2_BUFFER_SIZE_RX)
-    bookmark = bookmark - UART2_BUFFER_SIZE_RX;
+  if((uart2_buffer_rx_rd_ptr + uart2_buffer_rx_bookmark) >= UART2_BUFFER_SIZE_RX)
+    uart2_buffer_rx_bookmark = uart2_buffer_rx_bookmark - UART2_BUFFER_SIZE_RX;
 
-  if((uart2_buffer_rx_rd_ptr + bookmark) == uart2_buffer_rx_wr_ptr)
+  if((uart2_buffer_rx_rd_ptr + uart2_buffer_rx_bookmark) == uart2_buffer_rx_wr_ptr)
     return 0;
   
   // if it doesn't roll up then it copy message into temp buffer
   // else it copy the last part of the buffer and the first one until data
   // length
-  if((uart2_buffer_rx_rd_ptr + bookmark) <= uart2_buffer_rx_wr_ptr)
+  if((uart2_buffer_rx_rd_ptr + uart2_buffer_rx_bookmark) <= uart2_buffer_rx_wr_ptr)
   {
-    length_to_write = uart2_buffer_rx_wr_ptr - (uart2_buffer_rx_rd_ptr  + bookmark);
-    memcpy(uart2_buffer_rx_temp, &uart2_buffer_rx[uart2_buffer_rx_rd_ptr + bookmark], length_to_write);
+    length_to_write = uart2_buffer_rx_wr_ptr - (uart2_buffer_rx_rd_ptr  + uart2_buffer_rx_bookmark);
+
+    memcpy(uart2_buffer_rx_temp, &uart2_buffer_rx[uart2_buffer_rx_rd_ptr + uart2_buffer_rx_bookmark], length_to_write);
   }
   else
   {
-    length_to_write = (UART2_BUFFER_SIZE_RX - (uart2_buffer_rx_rd_ptr + bookmark));
-    memcpy(uart2_buffer_rx_temp, &uart2_buffer_rx[uart2_buffer_rx_rd_ptr + bookmark], length_to_write);
+    length_to_write = (UART2_BUFFER_SIZE_RX - (uart2_buffer_rx_rd_ptr + uart2_buffer_rx_bookmark));
+    
+    memcpy(uart2_buffer_rx_temp, &uart2_buffer_rx[uart2_buffer_rx_rd_ptr + uart2_buffer_rx_bookmark], length_to_write);
     memcpy(&uart2_buffer_rx_temp[length_to_write], uart2_buffer_rx, uart2_buffer_rx_wr_ptr);
 
-    length_to_write = length_to_write + uart2_buffer_rx_wr_ptr;
+    length_to_write = length_to_write + uart2_buffer_rx_wr_ptr;   
   }
 
   uart2_buffer_rx_temp[length_to_write] = '\0';
@@ -950,11 +959,11 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
 
   if(token_winner == NULL)
   {
-    bookmark++;
+    uart2_buffer_rx_bookmark++;
     return 0;
   }
 
-  bookmark = 0;
+  uart2_buffer_rx_bookmark = 0;
 
   // critical code: diabling intrrupts here keeps the access pointer values
   // proper
@@ -971,6 +980,7 @@ int uart2_buffer_read_multifiltered(char *data, char *token, char token_number)
   else
   {
     length_to_write = (UART2_BUFFER_SIZE_RX - uart2_buffer_rx_rd_ptr);
+
     memcpy(data, &uart2_buffer_rx[uart2_buffer_rx_rd_ptr], length_to_write);
     memcpy(&data[length_to_write], uart2_buffer_rx, uart2_buffer_rx_wr_ptr - (token_winner - uart2_buffer_rx_temp));
     length_to_write = length_to_write + uart2_buffer_rx_wr_ptr - (token_winner - uart2_buffer_rx_temp);
@@ -1168,22 +1178,18 @@ void uart1_isr(void)
 **************************************************/
 int uart2_isr(void)
 {
-  int interrupt_enable_rx = PIE3bits.RC2IE;
-  int interrupt_enable_tx = PIE3bits.TX2IE;
-
-  /*if(interrupt_enable_rx)
-    PIE3bits.RC2IE = 0;
-
-  if(interrupt_enable_tx)
-    PIE3bits.TX2IE = 0;*/
-  
   // For the transmitter
 
   if(UART2_INTERRUPT_TX)
   {
-    if(PIR3bits.TX2IF && interrupt_enable_tx)
+    if(PIR3bits.TX2IF && PIE3bits.TX2IE)
     {
+      PIE3bits.TX2IE = 0;
+
       uart2_buffer_send();
+
+      PIE3bits.TX2IE = 1;
+
       return 1;
     }
   }
@@ -1192,18 +1198,18 @@ int uart2_isr(void)
 
   if(UART2_INTERRUPT_RX)
   {
-    if(PIR3bits.RC2IF && interrupt_enable_rx)
+    if(PIR3bits.RC2IF && PIE3bits.RC2IE)
     {
+      PIE3bits.RC2IE = 0;
+
       uart2_buffer_rx_load();
+
+      PIE3bits.RC2IE = 1;
+
       return 1;
     }
   }
   
-  /*if(interrupt_enable_rx)
-    PIE3bits.RC2IE = 1;
-
-  if(interrupt_enable_tx)
-    PIE3bits.TX2IE = 1;*/
   return 0;
 }
 

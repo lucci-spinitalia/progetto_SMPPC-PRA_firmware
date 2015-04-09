@@ -11,10 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-unsigned char eeprom_at_work = 0; /**< indica quando si stanno compiendo delle operazioni sull'eeprom*/
-unsigned long eeprom_ptr_wr = 0;
-unsigned long eeprom_ptr_send = 0;
-unsigned long eeprom_data_count = 0;
+unsigned char flash_at_work = 0; /**< indica quando si stanno compiendo delle operazioni sull'eeprom*/
+unsigned long flash_ptr_wr = 0;
+unsigned long flash_ptr_send = 0;
+unsigned long flash_data_count = 0; /**< indica il numero di byte caricati nella flash */
 
 /**
  * Ottiene il manufacturer id ed il device id.
@@ -502,6 +502,9 @@ int winbond_data_read(unsigned char *data, unsigned short long data_bytes, unsig
   if(winbond.status_register_1.bits.busy == 1)
     return -1;
 
+  if(data_bytes <= 0)
+    return 0;
+  
   // enable chip
   spi_cs = 0;
 
@@ -561,8 +564,8 @@ int winbond_data_read(unsigned char *data, unsigned short long data_bytes, unsig
  */
 unsigned long winbond_empty_space(void)
 {
-  if(eeprom_data_count < EEPROM_SIZE)
-    return(EEPROM_SIZE - eeprom_data_count);
+  if(flash_data_count < EEPROM_SIZE)
+    return(EEPROM_SIZE - flash_data_count);
   else
     return 0;
 }
@@ -583,7 +586,7 @@ unsigned long winbond_empty_space(void)
  * a scrivere, a patto che il puntatore passi almeno una volta sulla prima locazione
  * dello stesso. Visto che i dati sono scritti a multipli di pagina, l'unica
  * condizione per cui la suddenta condizione non viene verificata è quando il
- * puntatore ::eeprom_ptr_wr viene inizializzato nel mezzo di un settore che
+ * puntatore ::flash_ptr_wr viene inizializzato nel mezzo di un settore che
  * non è stato precedentemente formattato. Questo potrebbe portare ad un'errata
  * scrittura dei dati.
  * Il numero massimo di dati che possono essere scritti con una singola chiamata
@@ -604,13 +607,13 @@ int winbond_data_load(unsigned char *data, int data_bytes)
 
   // imposto il flag di operazione su memeoria che consente di bloccare tutte
   // le istruzioni di sleep
-  eeprom_at_work = 1;
+  flash_at_work = 1;
 
   // controllo che il numero di byte da scrivere sia compatibile con la memoria
   // che mi rimane a disposizione
   if(winbond_empty_space() < data_bytes)
   {
-    eeprom_at_work = 0;
+    flash_at_work = 0;
     return -2;
   }
 
@@ -628,13 +631,13 @@ int winbond_data_load(unsigned char *data, int data_bytes)
   {
     // verifico se sto iniziando un nuovo settore. In questo caso devo prima
     // formattarlo
-    sector_address = eeprom_ptr_wr & 0xFFF000;
-    if(eeprom_ptr_wr == sector_address)
+    sector_address = flash_ptr_wr & 0xFFF000;
+    if(flash_ptr_wr == sector_address)
     {
       process_return = winbond_sector_erase(sector_address);
       if(process_return < -1)
       {
-        eeprom_at_work = 0;
+        flash_at_work = 0;
         return -1;
       }
     }
@@ -645,8 +648,8 @@ int winbond_data_load(unsigned char *data, int data_bytes)
      * basta sottrarre l'indirizzo di fine pagina a quello corrente.
      */
     // Per capire quanto spazio mi rimane da scrivere su una determinata pagina
-    page_end_address = (eeprom_ptr_wr & 0xFFFF00) | 0x0000FF;
-    empty_space = page_end_address - eeprom_ptr_wr + 1;
+    page_end_address = (flash_ptr_wr & 0xFFFF00) | 0x0000FF;
+    empty_space = page_end_address - flash_ptr_wr + 1;
 
     if((data_bytes - data_count) >= empty_space)
       data_to_write = empty_space;
@@ -659,11 +662,11 @@ int winbond_data_load(unsigned char *data, int data_bytes)
     else
       data_to_check = 64;
 
-    if(winbond_page_program(&data[data_count], data_to_write, eeprom_ptr_wr) > -1)
+    if(winbond_page_program(&data[data_count], data_to_write, flash_ptr_wr) > -1)
     {
       while(data_checked < data_to_write)
       {
-        if(winbond_data_read(data_check, data_to_check, eeprom_ptr_wr) == 0)
+        if(winbond_data_read(data_check, data_to_check, flash_ptr_wr) == 0)
         {
           data_checked += data_to_check;
 
@@ -676,16 +679,16 @@ int winbond_data_load(unsigned char *data, int data_bytes)
               data_to_check = 64;
 
             data_count += data_to_write;
-            eeprom_ptr_wr += data_to_write;
+            flash_ptr_wr += data_to_write;
 
-            if(eeprom_ptr_wr == (unsigned short long)EEPROM_SIZE)
-              eeprom_ptr_wr = 0;
+            if(flash_ptr_wr == (unsigned short long)EEPROM_SIZE)
+              flash_ptr_wr = 0;
 
-            eeprom_data_count += data_to_write;
+            flash_data_count += data_to_write;
           }
           else
           {
-            eeprom_at_work = 0;
+            flash_at_work = 0;
             return -3;
           }
         }
@@ -693,13 +696,13 @@ int winbond_data_load(unsigned char *data, int data_bytes)
     }
     else
     {
-      eeprom_at_work = 0;
+      flash_at_work = 0;
       return -1;
     }
   }
 
   // Risprisino il flag di operazione su memoria
-  eeprom_at_work = 0;
+  flash_at_work = 0;
 
   return 0;
 }
@@ -711,59 +714,74 @@ int winbond_data_load(unsigned char *data, int data_bytes)
  * @param max_data_bytes la massima dimensione del buffer
  * @return numero di byte letti dalla eeprom
  */
-unsigned short long winbond_data_send(unsigned char *data, int max_data_bytes)
+long winbond_data_send(unsigned char *data, unsigned short long max_data_bytes)
 {
   unsigned short long data_to_read;
   unsigned short long data_sent = 0;
 
   // imposto il flag di operazione su memeoria che consente di bloccare tutte
   // le istruzioni di sleep
-  eeprom_at_work = 1;
+  flash_at_work = 1;
 
   // Se non ci sono dati da inviare, esco
-  if(eeprom_data_count == 0)
+  if(flash_data_count == 0)
     return 0;
 
   // Confronto il numero di dati da inviare con quello massimo ammissibile.
   // Se è minore, allora leggo tutto quello che c'è, altrimenti ne leggo solo
   // una parte.
-  if(max_data_bytes >= eeprom_data_count)
-    data_to_read = eeprom_data_count;
+  if(max_data_bytes >= flash_data_count)
+    data_to_read = flash_data_count;
   else
     data_to_read = max_data_bytes;
 
-  // Nel caso in cui l'indirizzo finale risulta fuori dalla rosa degli indirizzi
+  // Nel caso in cui l'indirizzo finale risulti fuori dalla rosa degli indirizzi
   // ammissibili, è necessario tornare all'inizio del buffer
-  while((eeprom_ptr_send + data_to_read) >= EEPROM_SIZE)
+  if((flash_ptr_send + data_to_read) >= EEPROM_SIZE)
   {
-    if(winbond_data_read(data, EEPROM_SIZE - eeprom_ptr_send, eeprom_ptr_send) > -1)
+    if(winbond_data_read(&data[data_sent], EEPROM_SIZE - flash_ptr_send, flash_ptr_send) > -1)
     {
-      eeprom_ptr_send = 0;
-      eeprom_data_count -= (EEPROM_SIZE - eeprom_ptr_send);
-      data_to_read -= (EEPROM_SIZE - eeprom_ptr_send);
-      data_sent += (EEPROM_SIZE - eeprom_ptr_send);
+      data_to_read -= (EEPROM_SIZE - flash_ptr_send);
+      data_sent += (EEPROM_SIZE - flash_ptr_send);
     }
     else
     {
-      eeprom_at_work = 0;
+      flash_at_work = 0;
       return -1;
     }
   }
 
-  if(winbond_data_read(data, data_to_read, eeprom_ptr_send) > -1)
-  {
-    eeprom_ptr_send += data_to_read;
-    eeprom_data_count -= data_to_read;
+  if(winbond_data_read(&data[data_sent], data_to_read, flash_ptr_send) > -1)
     data_sent += data_to_read;
-  }
   else
   {
-    eeprom_at_work = 0;
+    flash_at_work = 0;
     return -1;
   }
 
   // Risprisino il flag di operazione su memoria
-  eeprom_at_work = 0;
+  flash_at_work = 0;
 
   return data_sent;
+}
+
+/**
+ * Aggiorna i puntatori alla flash.
+ *
+ * Questa funzione deve essere richiamata dopo che il dato precedentemente
+ * letto sia stato inviato correttamente.
+ *
+ * @param data_sent numero di byte con cui incrementare i puntatori.
+ */
+void update_circular_send_buffer(long data_sent)
+{
+  if(data_sent <= 0)
+    return;
+  
+  if((flash_ptr_send + data_sent) >= EEPROM_SIZE)
+    flash_ptr_send = data_sent - (EEPROM_SIZE - flash_ptr_send);
+  else
+    flash_ptr_send += data_sent;
+  
+  flash_data_count -= data_sent;
 }

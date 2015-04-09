@@ -6,10 +6,16 @@
  * \version 1.0
  * \date 04/08/2014
  */
-#define ERROR_MONITOR
+//#define ERROR_MONITOR
 
 #ifdef ERROR_MONITOR
-#define TIMEOUT_ERROR_MONITOR_S 90 /**< Tempo prima di inviare il report di stallo */
+#define TIMEOUT_ERROR_MONITOR_S 180 /**< Tempo prima di inviare il report di stallo */
+#endif
+
+//#define ADC_TIME_TEST
+
+#ifdef ADC_TIME_TEST
+short long adc_timer_ext1 = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra dell'EXT1 */
 #endif
 
 #define USE_OR_MASKS /**< Abilita l'opeartore or per concatenare i parametri del timer1*/
@@ -30,7 +36,7 @@
 #define BATTERY_PTR  0x2A
 #define ERROR_PTR 0x40
 
-#define TIMEOUT_UPDATE_RQST_MS 1000 /**< Periodo di invio delle richieste in centesimi di secondo*/
+#define TIMEOUT_UPDATE_RQST_MS 1000 /**< Periodo di invio delle richieste in millesimi di secondo*/
 #define TIMEOUT_CALIB_MODE_S 300 /**< Scandenza della modalità calibrazione in secondi */
 #define TIMEOUT_CALIB_SUCCESS_S 10 /**< Scandenza della modalità calibrazione in secondi */
 
@@ -97,13 +103,13 @@
  * prescaler pari a 4. Nel caso in cui la frequenza di clock sia di 64 MHz
  *
  * \f[
- *   n = \frac {1 \times 10^{-3}} {t_{ck} \times 4 \times prescaler} = {10^{-3} \times 4 \times 10^{6}} = 4000
+ *   n = \frac {1 \times 10^{-3}} {t_{ck} \times 4 \times prescaler} = {10^{-3} \times 4 \times 4 \times 10^{6}} = 1000
  * \f]
  *
  * Per avere un overflow ogni 1 ms si dovrà precaricare il registro di:
  *
  * \f[
- *   TIMER\_OFFSET = (2^{16} -1) - n = 61535
+ *   TIMER\_OFFSET = (2^{16} -1) - n = 64535
  * \f]
  */
 #define TIMER_OFFSET 64535
@@ -143,6 +149,7 @@
 #define EEPROM_DELAY_MS 10
 
 #define ADC_FILTER_NUMBER 10 /**< Numero di acquisizioni su cui fare una media*/
+#define NETWORK_ERROR_TRY 3 /**< Numero di tentativi di invio dati */
 
 #define BATT_CAPACITY 560.0 /**< Capacità della batteria in mAh */
 
@@ -153,7 +160,7 @@
  * per compensare la maggiore velocità, è necessario togliere ad ogni secondo
  * (1-0.983)=0.01695s.
  */
-#define RTCC_ERROR_S 0.01695
+//#define RTCC_ERROR_S 0.01695
 #define STC3100_RESISTOR_MOHM 33.0
 
 #include <stdio.h>
@@ -198,21 +205,22 @@
 
 /* P R O T O T Y P E *********************************************************/
 void initialize_system(void);
-//void user_timer_ms(void);
 void update_date(float error_sec);
 void message_load_uart(const char *buffer);
 int ap_mode(void);
 int download_configuration_ftp(void);
 int ping(void);
-int ping_send(void);
+int ping_send(int state);
 void circular_buffer_save(long start_address);
 int BCDToDecimal(char bcdByte);
 char DecimalToBCD(int decimalByte);
 void adc_open(int an_channel);
 void sleep_enter(void);
+long wifi_send_data(void);
 
 /* G L O B A L   V A R I A B L E *********************************************/
 time_t time_by_rn131 = 0; /**< Detiene i secondi trascorsi dall'epoc*/
+time_t time_by_rn131_start = 0;
 struct tm *date_structure;  /**< Detiene l'ora ed il giorno in formato parametrico s*/
 
 /** Indica quando è possibile terminare il programma.
@@ -234,7 +242,7 @@ volatile char rqst_update_flag = 0;
 /**
  * Indica quando si può leggere il valore dell'ultima acquisizione.
  */
-volatile char adc_update = 0;
+volatile char adc_update = -1;
 
 /**
  * Indica quando si possono aggiornare i valori del buffer circolare nella
@@ -242,12 +250,10 @@ volatile char adc_update = 0;
  */
 volatile char circular_buffer_update = 0;
 
-#ifdef ERROR_MONITOR
 /**
  * Indica quando si devono scrivere i valori di debug nella eeprom interna
  */
 volatile char error_monitor_update = 0;
-#endif
 
 /**
  * Indica quando c'è stato un errore di connessione verso la rete internet.
@@ -306,6 +312,9 @@ unsigned int eeprom_addr_count = 0;
 
 int eeprom_delay_flag = 0; /**< indica se è stato attivato il timer con il tempo necessario alla eeprom per accendersi */
 int adc_offset = 0; /**< memorizza l'errore in offset dell'adc */
+float clock_offset = 0; /**< errore relativo del clock interno nella misura del tempo */
+char calib_clock_rqst = -1; /**< flag per avviare la calibrazione dell'orologio */
+char end_of_message[2] = {END_OF_MESSAGE, 0}; /**< carattere che segna la fine del messaggio wifi */
 
 /* S  T R U C T *********************************************************/
 union
@@ -318,19 +327,19 @@ union
     {
       unsigned long value;
       unsigned char bytes[4];
-    } eeprom_data_count; /**< quantità di dati presente nell'eeprom da inviare */
+    } flash_data_count; /**< quantità di dati presente nell'eeprom da inviare */
 
     union
     {
       unsigned long value;
       unsigned char bytes[4];
-    } eeprom_ptr_wr; /**< locazione di memoria su cui si può scrivere */
+    } flash_ptr_wr; /**< locazione di memoria su cui si può scrivere */
 
     union
     {
       unsigned long value;
       unsigned char bytes[4];
-    } eeprom_ptr_send; /**< prima locazione di memoria da inviare wifi */
+    } flash_ptr_send; /**< prima locazione di memoria da inviare wifi */
 
     union
     {
@@ -450,7 +459,11 @@ union sample_union sample;
 void interrupt myIsr(void)
 {
   static short long adc_timer_temp = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della temperatura. */
+
+#ifndef ADC_TIME_TEST
   static short long adc_timer_ext1 = 0; /**< tiene il tempo trascorso tra un'acquisizione e l'altra dell'EXT1 */
+#endif
+
   static short long adc_timer_batt = BATT_ADC_TIMEOUT_S; /**< tiene il tempo trascorso tra un'acquisizione e l'altra della batteria. */
   static char rn131_sleep_flag = 0;
 
@@ -523,7 +536,6 @@ void interrupt myIsr(void)
     static const int timeout_connection_s = CONNECTION_TIMEOUT_MS / 1000;
 
     PIR3bits.RTCCIF = 0;
-    //led_err = ~led_err;
     
 #ifdef ERROR_MONITOR
     static signed char error_monitor_timer = 0; /**< tempo trascorso prima di lanciare il report */
@@ -565,7 +577,7 @@ void interrupt myIsr(void)
           /**
            * Abilita nuova richiesta
            *
-           * Se c'è stata una richiesta non soddisfatta dopo ::TIMEOUT_UPDATE_RQST_HS
+           * Se c'è stata una richiesta non soddisfatta dopo ::TIMEOUT_UPDATE_RQST_MS
            * allora si abilita il rinvio. In questo caso il firmware non deve andare
            * in sleep.
            *
@@ -574,7 +586,7 @@ void interrupt myIsr(void)
            * ::rqst_update_timer
            */
           if(rn131.cmd_mode_exit_rqst || rn131.cmd_mode_reboot_rqst || rn131.cmd_mode_rqst ||
-             rn131.time_set_rqst || rn131.cmd_http_rqst)
+             rn131.time_set_rqst || rn131.cmd_http_rqst || rn131.cmd_mode_ping_rqst)
           {
             rqst_update_timer++;
 
@@ -740,7 +752,7 @@ void interrupt myIsr(void)
 
   // this function must be the last because can send in sleep the micro
   if(PIR1bits.TMR1IF && PIE1bits.TMR1IE)
-  {
+  {   
     static int rqst_update_timer = 0;
     static short long connection_timer = 0; /**< tiene il tempo per lo scadere del tentativo di connession */
 
@@ -779,7 +791,7 @@ void interrupt myIsr(void)
          * ::rqst_update_timer
          */
         if(rn131.cmd_mode_exit_rqst || rn131.cmd_mode_reboot_rqst || rn131.cmd_mode_rqst ||
-           rn131.time_set_rqst || rn131.cmd_http_rqst)
+           rn131.time_set_rqst || rn131.cmd_http_rqst || rn131.cmd_mode_ping_rqst)
         {
           rqst_update_timer++;
 
@@ -799,7 +811,7 @@ void interrupt myIsr(void)
         adc_batt_enable = 1;
         rn131_sleep_flag++;
       }
-      else if(rn131_sleep_flag == 2)
+      else if(rn131_sleep_flag > 1)
       {
         adc_batt_enable = 0;
         adc_batt_enable_tris = INPUT_PIN;
@@ -836,8 +848,11 @@ void interrupt myIsr(void)
             {
               adc_timer_ext1 = 0;
               an_channel = EXT1_AN_CHANNEL;
-              update_date(RTCC_ERROR_S);
+              update_date(clock_offset);
+
+#ifndef ADC_TIME_TEST
               OSCCONbits.IDLEN = 0;
+#endif
               SelChanConvADC(an_channel);
             }
           }
@@ -860,7 +875,7 @@ void interrupt myIsr(void)
             {
               adc_timer_temp = 0;
               an_channel = TEMP_AN_CHANNEL;
-              update_date(RTCC_ERROR_S);
+              update_date(clock_offset);
               OSCCONbits.IDLEN = 0;
               SelChanConvADC(an_channel);
             }
@@ -917,39 +932,16 @@ void interrupt myIsr(void)
    * - la seriale ha finito di inviare tutti i dati
    * - non devo aggiornare i dati di errore nella eeprom interna
   */
-  if(((rn131.time_set == 1) && (communication_ready == 0)) && (adc_update == 0) && 
-     (circular_buffer_update == 0) && (error_monitor_update != 1) && (eeprom_at_work == 0) &&
+  if(((rn131.time_set == 1) && (communication_ready == 0)) && (adc_update <= 0) &&
+     (circular_buffer_update == 0) && (error_monitor_update != 1) && (flash_at_work == 0) &&
      (rn131.wakeup == 0) && (rn131_start_flag == 0) && (uart2_status.buffer_tx_empty == 1) &&
-     !BusyADC() && (TXSTA2bits.TRMT == 1))
+     (ADCON0bits.GO == 0) && (TXSTA2bits.TRMT == 1))
   {
     SLEEP();
   }
 }
 
-/*
- * Modifiche sulla scheda SMPPC-EL-001-01 (il simbolo * significa "necessaria")
- *   - dissaldare il transistor Q1 ed i componenti associati (R1, R2, R4, R5, R6, C2).
- *       Ora la temperatura viene letta dal modulo STC3100
- *   * - Cortocircuitare i pin 4 e 5 del connettore USB. Il pin di ground è il 5,
- *       ma nel circuito la massa è collegata al 4.
- *   - abilitare il regolatore interno del modulo rn131 lasciando le resistenze
- *     RP1 e RP2 e rimuovendo RP3. Nonostante sul datasheet si afferma che senza il
- *     regolatore la tensione di alimentazione può scendere fino a 2.5V, in realtà
- *     non si può andare sotto i 3.1V. Nel caso di regolatore spento, si è
- *     sperimentato che la tensione di alimentazione può arrivare fino a 2.5V.
- *   - Se si utilizzano le linee AN2 e AN6, rimuovere le resistenze R39 e R40.
- *   - Saldare una resistenza da 2k al posto di R6. In questo modo il firmware
- *       può effettuare la calibrazione andando a campionare il canale 0
- *   - Cortocircuitare il pin 25 di rn131 con il pad di R2 (che è stata precedentemente
- *     dissaldata), quello opposto pin adc_bat. Tramite questa modifica è possibile
- *     mandare il modulo in sleep senza dover inviare dati sulla seriale e quindi molto più
- *     velocemente. Montare al posto di R2 una resistenza da 10k per limitare la corrente
- *   - Dissaldare tutte le resistenze ed i condensatori dell'adc. Dovrà essere il circuito
- *     di condizionamento del sensore a dover rispettare la resistenza di carico e la tensione
- *     massima consentita. Collegare delle resistenza da 0 ohm per mantenere il collegamento.
- *
- *
- */
+
 /**
  * \brief Program's entry.
  *
@@ -963,10 +955,12 @@ void interrupt myIsr(void)
  *
  *
  * @todo
+ * - gestire il messaggio "Disconn from "
+ * - gestire il messaggio "Auto-Assoc AndroidAP7005 chan=0 mode=NONE FAILED\r\n" presente nella stringa iniziale
+ * - aggiungere un timeout per il ping
  * - aggiornare offset adc ad intervalli regolari
  * - speficare nella documentazione che ext2 viene acquisito subito dopo ext1 e viene inviato come variabile
  *   di supporto con il codice 0x03
- * - testare se il battery gauge misura bene
  * - scrivere sulla eeprom solo dopo 32 byte, così da ridurre il consumo di corrente
  * - usare lvd feature per capire quando la batteria è scarica
  * - aggiungere comando "reset parametri"
@@ -984,7 +978,6 @@ void interrupt myIsr(void)
 int main(void)
 {
   char ascii_buffer[256];
-  char end_of_message[2] = {END_OF_MESSAGE, 0};
   int ascii_buffer_size = 0;
   long timeout_update_ms_temp = 0;
 
@@ -992,10 +985,13 @@ int main(void)
   char *cmd_http_mark = NULL;
   char cmd_http_parse[32];
 
-  unsigned int uart_empty_space = 0;
   char uart_token[] = {'\n', '*'};
-  unsigned short long eeprom_data_to_send = 0; /**< numero di byte caricati dall'eeprom e pronti per essere inviati*/
-  udiv_t data_frame_number; /**< da qui prendo il quoziente per il calcolo del numero massimo di byte che posso leggere dalla eeprom */
+
+#if(UART2_BUFFER_SIZE_TX <= 256)
+  int eeprom_data_to_send = 0; /**< numero di byte caricati dall'eeprom e pronti per essere inviati. E' limitato dalla grandezza del buffer di invio. */
+#else
+  long eeprom_data_to_send = 0; /**< numero di byte caricati dall'eeprom e pronti per essere inviati. E' limitato dalla grandezza del buffer di invio. */
+#endif
 
   float battery_value_temp = 0; /**< Valore di apporggio per impostare il livello della batteria da remoto*/
 
@@ -1006,6 +1002,10 @@ int main(void)
   int ping_result = 0;
 
   float batt_soc = 0; /**< carica della batteria in percentuale */
+
+  time_t calib_time = 0; /**< Detiene i secondi trascorsi dall'epoc */
+
+  char network_error_count = 0; /**< Conto del numero di tentativi di invio dati */
 
   WDTCONbits.REGSLP = 1; // on-chip regulator enters low-power operation when device enters in Sleep mode
   OSCTUNEbits.INTSRC = 0;
@@ -1053,11 +1053,11 @@ int main(void)
   }
 
   /************ INIT GLOBAL ***********/
-  configuration.timeout_sleep_s.value = 240;
+  configuration.timeout_sleep_s.value = 60;
   configuration.timeout_update_adc_temp_ms.value = 30000;
   configuration.timeout_update_adc_ext1_ms.value = 30000;
   configuration.timeout_data_eeprom_s.value = 10;
-  configuration.battery_warn_value.value = 3.2;
+  configuration.battery_warn_value.value = 3.4;
   configuration.battery_min_value.value = 3.0;
   configuration.category.value = 2;
   winbond_return_value = 0;
@@ -1077,7 +1077,7 @@ int main(void)
   
   /******* INIT SERIAL COMM ********/
   uart1_close();
-  uart2_open(9600);
+  uart2_open(9600);  
 
   /******* INIT I2C   ******************/
   CloseI2C1();
@@ -1147,13 +1147,14 @@ int main(void)
   rn131.ready = 0;
   rn131.connected = 0;
   rn131.tcp_open = 0;
-  rn131.tcp_error = 0;
+  rn131.network_error = 0;
   rn131.cmd_mode = 0;
   rn131.ap_mode = 0;
   rn131.web_server_mode = 0;
   rn131.cmd_mode_rqst = 0;
   rn131.cmd_mode_exit_rqst = 0;
   rn131.cmd_mode_reboot_rqst = 0;
+  rn131.cmd_mode_ping_rqst = 0;
   rn131.cmd_http_rqst = 0;
   rn131.time_set = 0;
   rn131.time_set_rqst = 0;
@@ -1174,21 +1175,21 @@ int main(void)
   for(eeprom_addr_count = 0; eeprom_addr_count < sizeof(configuration.bytes); eeprom_addr_count++)
     configuration.bytes[eeprom_addr_count] = Read_b_eep(EEPROM_COUNT_PTR + eeprom_addr_count);
 
-  if((configuration.eeprom_ptr_send.value == 0xFFFFFFFF) && (configuration.eeprom_ptr_wr.value == 0xFFFFFFFF) && (configuration.eeprom_data_count.value == 0xFFFFFFFF))
+  if((configuration.flash_ptr_send.value == 0xFFFFFFFF) && (configuration.flash_ptr_wr.value == 0xFFFFFFFF) && (configuration.flash_data_count.value == 0xFFFFFFFF))
   {
-    configuration.eeprom_ptr_send.value = 0;
-    configuration.eeprom_ptr_wr.value = 0;
-    configuration.eeprom_data_count.value = 0;
+    configuration.flash_ptr_send.value = 0;
+    configuration.flash_ptr_wr.value = 0;
+    configuration.flash_data_count.value = 0;
     configuration.timeout_update_adc_temp_ms.value = 30000;
     configuration.timeout_update_adc_ext1_ms.value = 30000;
     configuration.timeout_data_eeprom_s.value = 10;
-    configuration.battery_warn_value.value = 3.2;
+    configuration.battery_warn_value.value = 3.4;
     configuration.battery_min_value.value = 3.0;
     configuration.category.value = 2;
-    configuration.timeout_sleep_s.value = 240;
+    configuration.timeout_sleep_s.value = 60;
   }
   
-  eeprom_at_work = 0;
+  flash_at_work = 0;
 
   status_flags.byte = 0;
   
@@ -1225,7 +1226,7 @@ int main(void)
      * I can't syncronize request with timer, so I discard the first occurrance.
      * In this way the max elapsed time is (TIMEOUT * 2)
      */
-    if(rqst_update_flag == 1)
+    if((rqst_update_flag == 1) && (TXSTA2bits.TXEN == 1))
     {
       if(rn131.cmd_mode_rqst == 1)
         rn131.cmd_mode_rqst++;
@@ -1271,9 +1272,24 @@ int main(void)
           rn131.cmd_mode_reboot_rqst = 0;
       }
 
+      if(rn131.cmd_mode_ping_rqst == 1)
+        rn131.cmd_mode_ping_rqst++;
+      else if((rn131.cmd_mode_ping_rqst > 1) && (uart2_status.buffer_tx_empty == 1))
+      {
+        if(ping_result == 0)
+        {
+          rn131.cmd_mode_ping_rqst++;
+          if(rn131.cmd_mode_ping_rqst == REQUEST_NUMBER_OF_TRY)
+          {
+            rn131.cmd_mode_ping_rqst = 0;
+            ping_result = -1;
+          }
+        }
+      }
+
       if(rn131.cmd_http_rqst == 1)
         rn131.cmd_http_rqst++;
-      else if((rn131.cmd_http_rqst > 1)  && (uart2_status.buffer_tx_empty == 1))
+      else if((rn131.cmd_http_rqst > 1)  && (uart2_status.buffer_tx_empty == 1) && (rn131.tcp_open == 0))
       {
         buffer[0] = 0;
         
@@ -1424,8 +1440,9 @@ int main(void)
     // sulla uart ed ho già verificato la presenza del web server (per prendere
     // eventuali richieste), allora posso spegnere il dispositivo
     if(((rn131.wakeup == 1) || (rn131_start_flag == 1)) && (rn131.time_set == 1) && (rn131.ap_mode == 0) &&
-       (rn131.cmd_http_rqst == 0) && (eeprom_data_count == 0) && (TXSTA2bits.TRMT == 1) &&
-       (communication_ready == 1) && (tcp_start_timer_flag == -1) &&  (rn131.cmd_mode_reboot_rqst == 0))
+       (rn131.cmd_http_rqst == 0) && (flash_data_count == 0) && (TXSTA2bits.TRMT == 1) &&
+       (communication_ready == 1) && (tcp_start_timer_flag == -1) && (rn131.tcp_open == 0) &&
+       (rn131.cmd_mode_reboot_rqst == 0))
       sleep_enter();
 
     switch(uart2_error_handle())
@@ -1450,265 +1467,349 @@ int main(void)
     }
 #endif
  /******************************************************************  Send ****/
-    uart2_buffer_send();
+    if(TXSTA2bits.TXEN == 1)
+      uart2_buffer_send();
     
-/****************************************************************** Read     */     
-    do
+/****************************************************************** Read     */
+    if(RCSTA2bits.SPEN == 1)
     {
-      if(UART2_INTERRUPT_RX == 0)
-        while(uart2_buffer_rx_load());
-
-      if(uart2_status.buffer_rx_empty == 0)
+      do
       {
-        rn131_message_length = uart2_buffer_read_multifiltered(buffer, uart_token, 2);
-
         if(UART2_INTERRUPT_RX == 0)
-          uart2_buffer_rx_load(); //Lettura del buffer di ricezione per aumentarne la frequenza
+          while(uart2_buffer_rx_load());
 
-        if(rn131_message_length > 0)
+        if(uart2_status.buffer_rx_empty == 0)
         {
-          // Check for a new connection
-          if(rn131_connection_init(buffer, rn131_message_length) == 1)
+          rn131_message_length = uart2_buffer_read_multifiltered(buffer, uart_token, 2);
+
+          if(UART2_INTERRUPT_RX == 0)
+            uart2_buffer_rx_load(); //Lettura del buffer di ricezione per aumentarne la frequenza
+
+          if(rn131_message_length > 0)
           {
-            buffer[0] = '\0';
-            if((rn131.web_server_mode == 1) && (rn131.ap_mode == 0)) // sono tornato dalla modalità web_server
+            // Check for a new connection
+            if(rn131_connection_init(buffer, rn131_message_length) == 1)
             {
-              rn131.web_server_mode = 0;
+              buffer[0] = '\0';
+
+              if((rn131.web_server_mode == 1) && (rn131.ap_mode == 0)) // sono tornato dalla modalità web_server
+              {
+                rn131.web_server_mode = 0;
               
-              if(rn131.time_set == 1)
-                sleep_enter();
-
-            }
-            
-            continue;
-          }
-
-          // Controllo che riceva il messaggio CMD dopo una richiesta d'ingresso
-          // in modalità command
-          if(rn131.cmd_mode == 0)
-          {
-            if(rn131.cmd_mode_rqst > 0)
-            {
-              //if(rn131_command_enter() == 1)
-              if(rn131_parse_message(buffer, "CMD") == 1)
-              {
-                rn131.cmd_mode = 1;
-                rn131.cmd_mode_rqst = 0;
-                continue;
-              }
-            }
-
-            if((rn131.connected == 1) && (rn131.time_set == 1))
-            {
-              if(rn131.tcp_open == 0)
-              {
-                if(rn131_parse_message(buffer, "OPEN"))
-                {
-                  rn131.tcp_open = 1;
-                  tcp_start_timer_flag = 1;
-
-                  continue;
-                }
-
-                if(rn131_parse_message(buffer, "Connect FAILED") || rn131_parse_message(buffer, "HTTP/1.0 404 Not Found"))
-                {
-                  rn131.tcp_error = 1;
+                if(rn131.time_set == 1)
                   sleep_enter();
+              }
 
+              if(rn131.network_error)  //no access point
+              {
+                if(rn131.time_set == 1)
+                  sleep_enter();
+              }
+            
+              continue;
+            }
+
+            // Controllo che riceva il messaggio CMD dopo una richiesta d'ingresso
+            // in modalità command
+            if(rn131.cmd_mode == 0)
+            {
+              if(rn131.cmd_mode_rqst > 0)
+              {
+                //if(rn131_command_enter() == 1)
+                if(rn131_parse_message(buffer, "CMD") == 1)
+                {
+                  rn131.cmd_mode = 1;
+                  rn131.cmd_mode_rqst = 0;
                   continue;
                 }
               }
-              else
+
+              if((rn131.connected == 1) && (rn131.time_set == 1))
               {
-                if((rn131.cmd_http_rqst == 0) && (rn131_http_response(buffer)))
+                if(rn131.tcp_open == 0)
                 {
-                  strcpy(rn131.cmd_http, buffer);
-                  continue;
-                }
-
-                if(rn131_parse_message(buffer, "CLOS"))
-                {
-                  rn131.tcp_open = 0;
-
-                  tcp_start_timer_flag = configuration.timeout_data_eeprom_s.value - 1;  // diminuisco il tempo di attesa ad 1 secondo
-                  if(rn131.cmd_http[0] != 0)
+                  if(rn131_parse_message(buffer, "OPEN"))
                   {
-                    rn131.cmd_http_rqst = 1;
-                    cmd_http_start = rn131.cmd_http;
+                    led_err = 1;
+
+                    rn131.tcp_open = 1;
+                    tcp_start_timer_flag = -1;
+
+                    continue;
                   }
-                  continue;
-                }
-              }
-            }
-          }
-          else //if(rn131.cmd_mode == 0)
-          {
-            if(rn131.cmd_mode_exit_rqst > 0)
-            {
-              if(rn131_parse_message(buffer, "EXIT"))
-              {
-                rn131.cmd_mode = 0;
-                rn131.cmd_mode_exit_rqst = 0;
 
-                continue;
-              }
-            }
-
-            if(rn131.connected == 1)
-            {
-              if(rn131.time_set == 0)
-              {
-                if(rn131.time_set_rqst > 0)
-                {
-                  if(rn131_command_show_time(buffer, &time_by_rn131) == 1)
+                  if(rn131_parse_message(buffer, "Connect FAILED"))
                   {
-                    if(rn131.time_set == 1)
+                    rn131.network_error = 1;
+                    sleep_enter();
+                  
+                    continue;
+                  }
+                }
+                else
+                {
+                  if(rn131_parse_message(buffer, "HTTP/1.1 200"))
+                  {
+                    update_circular_send_buffer(eeprom_data_to_send);
+                    configuration.flash_ptr_send.value = flash_ptr_send;
+                    configuration.flash_data_count.value = flash_data_count;
+
+                    eeprom_data_to_send = 0;
+
+                    continue;
+                  }
+                  else if(rn131_parse_message(buffer, "HTTP/1.1"))
+                  {
+                    rn131.network_error = 1;
+                    sleep_enter();
+
+                    continue;
+                  }
+
+                  if((rn131.cmd_http_rqst == 0) && (rn131_http_response(buffer)))
+                    strcpy(rn131.cmd_http, buffer);
+
+                  if(rn131_parse_message(buffer, "CLOS"))
+                  {
+                    led_err = 0;
+                    rn131.tcp_open = 0;
+                  
+                    if(rn131.cmd_http[0] != 0)
                     {
-                      if(T1CONbits.TMR1ON == 1)
-                        CloseTimer1();
-                      
-                      date_structure = gmtime(&time_by_rn131);
-
-                      // date_structure indica l'anno partendo dal 1900, mentre rtcc_date lo indica partendo
-                      // dal 2000
-                      rtcc_time_date.f.year = DecimalToBCD(date_structure->tm_year - 100);
-                      rtcc_time_date.f.mon = DecimalToBCD(date_structure->tm_mon + 1);
-                      rtcc_time_date.f.mday = DecimalToBCD(date_structure->tm_mday);
-                      rtcc_time_date.f.wday = DecimalToBCD(date_structure->tm_wday);
-                      rtcc_time_date.f.hour = DecimalToBCD(date_structure->tm_hour);
-                      rtcc_time_date.f.min = DecimalToBCD(date_structure->tm_min);
-                      rtcc_time_date.f.sec = DecimalToBCD(date_structure->tm_sec);
-
-                      RtccWrOn(); //write enable the rtcc registers
-
-                      if(!RtccWriteTimeDate(&rtcc_time_date , 1))
-                        status_flags.bits.rttc_update_fail = 1;
-
-                      rtcc_time_date.f.year = DecimalToBCD(date_structure->tm_year - 100);
-                      rtcc_time_date.f.mon = DecimalToBCD(date_structure->tm_mon + 1);
-                      rtcc_time_date.f.mday = DecimalToBCD(date_structure->tm_mday);
-                      rtcc_time_date.f.wday = DecimalToBCD(date_structure->tm_wday);
-                      rtcc_time_date.f.hour = DecimalToBCD(date_structure->tm_hour);
-                      rtcc_time_date.f.min = DecimalToBCD(date_structure->tm_min);
-                      rtcc_time_date.f.sec = DecimalToBCD(date_structure->tm_sec);
-
-                      ALRMCFGbits.CHIME = 1;
-                      ALRMCFGbits.AMASK = 1;
-
-                      if(!RtccWriteAlrmTimeDate(&rtcc_time_date))
-                        status_flags.bits.rttc_update_fail = 1;
-                      
-                      if(status_flags.bits.rttc_update_fail != 1)
-                      {
-                        PADCFG1bits.RTSECSEL = 2;
-                        // Il clock interno è di 31kHz, invece dei 32758 Hz attesi.
-                        // Quindi bisogna compensare come descritto nell'equazione 18-1
-                        // del datasheet. Però non è possibile compensare così tanto, in quanto
-                        // il registro di autocompensazione è da soli 8 bit. Con il valore massimo
-                        // arrivo ad una frequenza di 31500. L'errore commesso è di 0.038 secondi al secondo,
-                        // quindi in un'ora commetterò un errore pari a 136.8 secondi all'ora.
-                        //RTCCAL = 0x00;
-                        mRtccOn();
-                        mRtccClearAlrmPtr();
-                        mRtccAlrmEnable();
-                      }
-
-                      mRtccWrOff();
-                      
-                      rn131.time_set_rqst = 0;
-
-                      if(UART2_INTERRUPT_RX == 0)
-                        uart2_buffer_rx_load(); //Lettura del buffer di ricezione per aumentarne la frequenza
-
-
-                      // It need to be rebooted otherwise the web server will kick off
-                      // everyone trying to connect to it
-                      if(rn131.cmd_mode_reboot_rqst == 0)
-                      {
-                        message_load_uart("reboot\r");
-
-                        rn131_reset_flag();
-                        communication_ready = 0;
-                        tcp_start_timer_flag = -1;
-                        
-                        rn131.cmd_mode_reboot_rqst = 1;
-                      }
+                      rn131.cmd_http_rqst = 1;
+                      cmd_http_start = rn131.cmd_http;
                     }
+
+                    if(flash_data_count > 0)
+                      eeprom_data_to_send = wifi_send_data();
 
                     continue;
                   }
                 }
               }
             }
-          }
-        }
-      }
-    } while((rn131_message_length > 0) && (uart2_status.buffer_rx_empty == 0));
-
-
-    if(UART2_INTERRUPT_RX == 0)
-      uart2_buffer_rx_load(); //Lettura del buffer di ricezione per aumentarne la frequenza
-
-
-    /***********************************************************  Update  ***/
-    if(rn131.connected == 1) // implica anche che il modulo è acceso
-    {
-      if(rn131.time_set == 0)
-      {
-        if(config_error == 1)
-        {
-          rn131.time_set_rqst = 0;
-          ftp_update_return_value = download_configuration_ftp();
-          
-          if(ftp_update_return_value == 1)
-          {
-            config_error = 0;
-            rn131.time_set_rqst = 1;
-          }
-          else if(ftp_update_return_value == -1)
-            config_error = 0;
-        }
-        else
-        {
-          if(rn131.cmd_mode == 0)
-          {
-            if(rn131.cmd_mode_rqst == 0)
+            else //if(rn131.cmd_mode == 0)
             {
-              message_load_uart("$$$");
-              rn131.cmd_mode_rqst = 1;
+              if(rn131.cmd_mode_exit_rqst > 0)
+              {
+                if(rn131_parse_message(buffer, "EXIT"))
+                {
+                  rn131.cmd_mode = 0;
+                  rn131.cmd_mode_exit_rqst = 0;
+
+                  continue;
+                }
+              }
+
+              if(rn131.connected == 1)
+              {
+                if((rn131.time_set == 0) || (calib_clock_rqst == 1))
+                {
+                  if(rn131.time_set_rqst > 0)
+                  {
+                    if(calib_clock_rqst != 1)
+                    {
+                      if(rn131_command_show_time(buffer, &time_by_rn131) > 0)
+                        {
+                        if(rn131.time_set == 1)
+                        {
+                          if(T1CONbits.TMR1ON == 1)
+                            CloseTimer1();
+                      
+                          date_structure = gmtime(&time_by_rn131);
+
+                          // date_structure indica l'anno partendo dal 1900, mentre rtcc_date lo indica partendo
+                          // dal 2000
+                          rtcc_time_date.f.year = DecimalToBCD(date_structure->tm_year - 100);
+                          rtcc_time_date.f.mon = DecimalToBCD(date_structure->tm_mon + 1);
+                          rtcc_time_date.f.mday = DecimalToBCD(date_structure->tm_mday);
+                          rtcc_time_date.f.wday = DecimalToBCD(date_structure->tm_wday);
+                          rtcc_time_date.f.hour = DecimalToBCD(date_structure->tm_hour);
+                          rtcc_time_date.f.min = DecimalToBCD(date_structure->tm_min);
+                          rtcc_time_date.f.sec = DecimalToBCD(date_structure->tm_sec);
+
+                          RtccWrOn(); //write enable the rtcc registers
+
+                          if(!RtccWriteTimeDate(&rtcc_time_date , 1))
+                            status_flags.bits.rttc_update_fail = 1;
+
+                          rtcc_time_date.f.year = DecimalToBCD(date_structure->tm_year - 100);
+                          rtcc_time_date.f.mon = DecimalToBCD(date_structure->tm_mon + 1);
+                          rtcc_time_date.f.mday = DecimalToBCD(date_structure->tm_mday);
+                          rtcc_time_date.f.wday = DecimalToBCD(date_structure->tm_wday);
+                          rtcc_time_date.f.hour = DecimalToBCD(date_structure->tm_hour);
+                          rtcc_time_date.f.min = DecimalToBCD(date_structure->tm_min);
+                          rtcc_time_date.f.sec = DecimalToBCD(date_structure->tm_sec);
+
+                          ALRMCFGbits.CHIME = 1;
+                          ALRMCFGbits.AMASK = 1;
+
+                          if(!RtccWriteAlrmTimeDate(&rtcc_time_date))
+                            status_flags.bits.rttc_update_fail = 1;
+                      
+                          if(status_flags.bits.rttc_update_fail != 1)
+                          {
+                            PADCFG1bits.RTSECSEL = 2;
+                            // Il clock interno è di 31kHz, invece dei 32758 Hz attesi.
+                            // Quindi bisogna compensare come descritto nell'equazione 18-1
+                            // del datasheet. Però non è possibile compensare così tanto, in quanto
+                            // il registro di autocompensazione è da soli 8 bit. Con il valore massimo
+                            // arrivo ad una frequenza di 31500. L'errore commesso è di 0.038 secondi al secondo,
+                            // quindi in un'ora commetterò un errore pari a 136.8 secondi all'ora.
+                            //RTCCAL = 0x00;
+                            mRtccOn();
+                            mRtccClearAlrmPtr();
+                            mRtccAlrmEnable();
+                          }
+
+                          mRtccWrOff();
+                      
+                          rn131.time_set_rqst = 0;
+
+                          if(UART2_INTERRUPT_RX == 0)
+                            uart2_buffer_rx_load(); //Lettura del buffer di ricezione per aumentarne la frequenza
+
+                          update_date(clock_offset);
+
+                          if(time_by_rn131_start == 0)
+                            time_by_rn131_start = time_by_rn131;
+                        
+                          // It need to be rebooted otherwise the web server will kick off
+                          // everyone trying to connect to it
+                          if(rn131.cmd_mode_reboot_rqst == 0)
+                          {
+                            message_load_uart("reboot\r");
+
+                            rn131_reset_flag();
+                            communication_ready = 0;
+                            tcp_start_timer_flag = -1;
+
+                            calib_clock_rqst = 0;
+                        
+                            rn131.cmd_mode_reboot_rqst = 1;
+                          }
+                        }
+
+                        continue;
+                      }
+                    }
+                    else //if(calib_clock_rqst == 0)
+                    {
+                      if(rn131_command_show_time(buffer, &calib_time) == 2)
+                      {
+                        // todo: aggiornare l'rtc
+                        update_date(clock_offset);
+                        clock_offset = (float)(calib_time - time_by_rn131) / (time_by_rn131 - time_by_rn131_start);
+                        calib_clock_rqst = -1;
+
+                        // It need to be rebooted otherwise the web server will kick off
+                        // everyone trying to connect to it
+                        if(rn131.cmd_mode_reboot_rqst == 0)
+                        {
+                          message_load_uart("reboot\r");
+
+                          rn131_reset_flag();
+                          communication_ready = 0;
+                          tcp_start_timer_flag = -1;
+
+                          rn131.cmd_mode_reboot_rqst = 1;
+                        }
+                      }
+                    }
+                  }
+                }
+                else // if((rn131.time_set == 0) || (calib_clock_rqst == 1))
+                {
+                  if(rn131.cmd_mode_ping_rqst)
+                  {
+                    ping_result = ping_send(-1);
+
+                    if(ping_result != 0)
+                      rn131.cmd_mode_ping_rqst = 0;
+                  }
+                }
+              }
             }
+          }
+        } //if(uart2_status.buffer_rx_empty == 0)
+      } while((rn131_message_length > 0) && (uart2_status.buffer_rx_empty == 0));
+
+
+      if(UART2_INTERRUPT_RX == 0)
+        uart2_buffer_rx_load(); //Lettura del buffer di ricezione per aumentarne la frequenza
+
+
+      /***********************************************************  Update  ***/
+      if(rn131.connected == 1) // implica anche che il modulo è acceso
+      {        
+        if((rn131.time_set == 0)|| (calib_clock_rqst == 1))
+        {
+          if(config_error == 1)
+          {
+            rn131.time_set_rqst = 0;
+            ftp_update_return_value = download_configuration_ftp();
+          
+            if(ftp_update_return_value == 1)
+            {
+              config_error = 0;
+              rn131.time_set_rqst = 1;
+            }
+            else if(ftp_update_return_value == -1)
+              config_error = 2;
+          }
+          else if(config_error == 2)
+          {
+            if(ap_mode())
+              config_error = 0;
           }
           else
           {
-            if(rn131.ap_mode == 0)
+            if(rn131.cmd_mode == 0)
             {
-              if(rn131.time_set_rqst == 0)
+              if(rn131.cmd_mode_rqst == 0)
               {
-                message_load_uart("time\r");
-
-                rn131.time_set_rqst = 1;
+                message_load_uart("$$$");
+                rn131.cmd_mode_rqst = 1;
               }
             }
             else
             {
-              message_load_uart("set wlan join 1\rset ip dhcp 3\rsave\r");
-              message_load_uart("reboot\r");
+              if(rn131.ap_mode == 0)
+              {
+                if(rn131.time_set_rqst == 0)
+                {
+                  message_load_uart("time\r");
 
-              rn131_reset_flag();
-              communication_ready = 0;
-              tcp_start_timer_flag = -1;
-              rn131.cmd_mode_reboot_rqst = 1;
+                  rn131.time_set_rqst = 1;
+                }
+              }
+              else
+              {
+                message_load_uart("set wlan join 1\rset ip dhcp 3\rsave\r");
+                message_load_uart("reboot\r");
+
+                rn131_reset_flag();
+                communication_ready = 0;
+                tcp_start_timer_flag = -1;
+                rn131.cmd_mode_reboot_rqst = 1;
+              }
             }
           }
         }
-      }
-      else if(communication_ready == 0)  // verifico che il webserver sia presente
-      {
-        ping_result = ping();
-        if(ping_result == 1)
+        else if(communication_ready == 0)  // verifico che il webserver sia presente
         {
-          sprintf(buffer, "%s%s", rn131.mac, end_of_message);
-          uart2_buffer_tx_seq_load(buffer, strlen(buffer));
+          led_no_err = 1;
+
+          // Provo ad inviare un dato, se è presente, altrimenti invio un
+          // messaggio vuoto.
+          if(flash_data_count > 0)
+            eeprom_data_to_send = wifi_send_data();
+          else
+          {
+            sprintf(buffer, "%s%s", rn131.mac, end_of_message);
+            uart2_buffer_tx_seq_load(buffer, strlen(buffer));
+            tcp_start_timer_flag = 1;
+          }
 
           while(uart2_status.buffer_tx_empty == 0)
           {
@@ -1719,101 +1820,33 @@ int main(void)
           }
   
           communication_ready = 1;
-          tcp_start_timer_flag = 1;
         }
-        else if(ping_result == -1)
+        else if((rn131.network_error == 0) && (tcp_start_timer_flag == 0))
         {
+          // tcp_start_timer_flag viene usato come timeout di sicurezza nel caso in
+          // cui abbia inviato un dato e non ricevo nulla dalla seriale come risposta
           sleep_enter();
         }
       }
-      else if((rn131.tcp_error == 0) && (tcp_start_timer_flag == 0))
+      else //if(rn131.connected == 1)
       {
-        // se mi trovo in modalità comandi, esco
-        if(rn131.cmd_mode == 1)
+        if(config_error == 1)
         {
-          if(rn131.cmd_mode_exit_rqst == 0)
+          if(rn131.time_set == 0)
           {
-            message_load_uart("exit\r");
-            rn131.cmd_mode_exit_rqst = 1;
+            if(ap_mode())
+              config_error = 0;
+          }
+          else
+          {
+            config_error = 0;
+            sleep_enter();
           }
         }
-        else
-        {
-          // il timer viene disabilitato ed i dati vengono inviati a blocchi della dimensione massima consentita.
-          // il timer viene automaticamente abilitato alla ricezione di una stringa OPEN o CLOS da parte del
-          // web server. In questo modo il modulo wifi ha il tempo di compiere tutte le operazioni di cui ha bisogno
-          // senza perdere caratteri dalla seriale.
-          tcp_start_timer_flag = -1;
-          
-          if(eeprom_data_count > 0)
-          {
-            if(SSP2CON1bits.SSPEN == 0)
-            {
-              spi_open();
-            }
-
-            // Voglio convertire i dati esadecimali in stringhe ascii: visto che ogni
-            // byte è rappresentato da 2 caratteri, ho bisogno del doppio dello spazio
-            // nel buffer di trasmissione. Inoltre voglio inserire il MAC address
-            // del dispositivo rn131, che è di 18 caratteri
-            uart_empty_space = (uart2_get_tx_buffer_empty_space() >> 1) - 18;
-            data_frame_number = udiv(uart_empty_space - 1, sizeof(union sample_union));
-        
-            // leggo dall'eeprom e carico i dati sulla seriale. Devo riservarmi l'ultimo
-            // carattere per inserire quello di fine messaggio. Inoltre devo inviare
-            // dati non frammentati.
-            eeprom_data_to_send = winbond_data_send(buffer, data_frame_number.quot * sizeof(union sample_union));
-            configuration.eeprom_ptr_send.value = eeprom_ptr_send;
-            configuration.eeprom_data_count.value = eeprom_data_count;
-
-            if(eeprom_data_to_send > 0)
-            {
-              int i;
-              char ascii_hex[3];
-
-              strcat(ascii_buffer,  rn131.mac);
-              for(i = 0; i < eeprom_data_to_send; i++)
-              {
-                sprintf(ascii_hex, "%.02x", buffer[i]);
-                strcat(ascii_buffer,  ascii_hex);
-              }
-
-              strcat(ascii_buffer, end_of_message);
-
-              ascii_buffer_size = strlen(ascii_buffer);
-              uart2_buffer_tx_seq_load(ascii_buffer, ascii_buffer_size);
-
-              while(uart2_status.buffer_tx_empty == 0)
-              {
-                uart2_buffer_send();
-
-                if(UART2_INTERRUPT_RX == 0)
-                  uart2_buffer_rx_load();
-              }
-
-              // resetto il buffer, così che i valori vengano appesi partendo dall'inizio
-              ascii_buffer[0] = '\0';
-
-              tcp_start_timer_flag = 1;
-            }
-
-            if(SSP2CON1bits.SSPEN == 1)
-            {
-              spi_close();
-            }
-          } //if(eeprom_data_count > 0)
-        }
-      }
-    }
-    else //if(rn131.connected == 1)
-    {
-      if(config_error == 1)
-      {
-        if(ap_mode())
-          config_error = 0;
       }
     }
 
+#ifdef ERROR_MONITOR
     if(error_monitor_update == 1)
     {
       int error_monitor_count = 0;
@@ -1842,7 +1875,7 @@ int main(void)
       Write_b_eep(ERROR_PTR + BATTERY_PTR + 45, rn131.cmd_mode_rqst);
       Write_b_eep(ERROR_PTR + BATTERY_PTR + 46, rn131.connected);
       Write_b_eep(ERROR_PTR + BATTERY_PTR + 47, rn131.ready);
-      Write_b_eep(ERROR_PTR + BATTERY_PTR + 48, rn131.tcp_error);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 48, rn131.network_error);
       Write_b_eep(ERROR_PTR + BATTERY_PTR + 49, rn131.tcp_open);
       Write_b_eep(ERROR_PTR + BATTERY_PTR + 50, rn131.time_set);
       Write_b_eep(ERROR_PTR + BATTERY_PTR + 51, rn131.time_set_rqst);
@@ -1871,16 +1904,17 @@ int main(void)
       Write_b_eep(ERROR_PTR + BATTERY_PTR + 72, status_flags.bits.spi_bus_collision);
       Write_b_eep(ERROR_PTR + BATTERY_PTR + 73, status_flags.bits.uart_overflow);
 
-      Write_b_eep(ERROR_PTR + BATTERY_PTR + 74, eeprom_data_count & 0x0000ff);
-      Write_b_eep(ERROR_PTR + BATTERY_PTR + 75, (eeprom_data_count >> 8) & 0x0000ff);
-      Write_b_eep(ERROR_PTR + BATTERY_PTR + 76, eeprom_data_count >> 16);
-      Write_b_eep(ERROR_PTR + BATTERY_PTR + 77, eeprom_data_count >> 24);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 74, flash_data_count & 0x0000ff);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 75, (flash_data_count >> 8) & 0x0000ff);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 76, flash_data_count >> 16);
+      Write_b_eep(ERROR_PTR + BATTERY_PTR + 77, flash_data_count >> 24);
 
       Write_b_eep(ERROR_PTR + CATEGORY_PTR + 78, time_by_rn131 & 0x0000ff);
       Write_b_eep(ERROR_PTR + CATEGORY_PTR + 79, (time_by_rn131 >> 8) & 0x0000ff);
       Write_b_eep(ERROR_PTR + CATEGORY_PTR + 80, time_by_rn131 >> 16);
       Write_b_eep(ERROR_PTR + CATEGORY_PTR + 81, time_by_rn131 >> 24);
     }
+#endif
 
     if((rn131.time_set == 1) && (rn131.wakeup == 0) && (rn131_start_flag == 0))
     {
@@ -1992,8 +2026,8 @@ int main(void)
 
               if(winbond_return_value == 0)
               {
-                configuration.eeprom_ptr_wr.value = eeprom_ptr_wr;
-                configuration.eeprom_data_count.value = eeprom_data_count;
+                configuration.flash_ptr_wr.value = flash_ptr_wr;
+                configuration.flash_data_count.value = flash_data_count;
               }
               else if(winbond_return_value == -1)
                 status_flags.bits.spi_bus_collision = 1;
@@ -2015,21 +2049,32 @@ int main(void)
             {
               sample.sample_struct.adc_value_int -= adc_offset;
 
+#ifdef ADC_TIME_TEST
+              charger_prg = ~charger_prg;
+#endif
+              
               adc_acquisition_number++;
               if((adc_acquisition_number < ADC_FILTER_NUMBER))
               {
                 adc_filtered += sample.sample_struct.adc_value_int;
 
                 an_channel = EXT1_AN_CHANNEL;
-                ConvertADC();
+
+                while(ADCON0bits.GO == 0)
+                  ADCON0bits.GO = 1;
               }
               else
               {
-                adc_acquisition_number = 0;
                 adc_filtered += sample.sample_struct.adc_value_int;
-                sample.sample_struct.adc_value_int = adc_filtered / ADC_FILTER_NUMBER;
+                sample.sample_struct.adc_value_int = adc_filtered / adc_acquisition_number;
+                adc_acquisition_number = 0;
 
                 adc_filtered = 0;
+
+#ifdef ADC_TIME_TEST
+              adc_timer_ext1 = 0;
+              OSCCONbits.IDLEN = 0;
+#endif
 
                 if(calib_mode == 0)
                 {
@@ -2044,8 +2089,8 @@ int main(void)
 
                   if(winbond_return_value == 0)
                   {
-                    configuration.eeprom_ptr_wr.value = eeprom_ptr_wr;
-                    configuration.eeprom_data_count.value = eeprom_data_count;
+                    configuration.flash_ptr_wr.value = flash_ptr_wr;
+                    configuration.flash_data_count.value = flash_data_count;
                   }
                   else if(winbond_return_value == -1)
                     status_flags.bits.spi_bus_collision = 1;
@@ -2093,7 +2138,9 @@ int main(void)
                 adc_filtered += sample.sample_struct.adc_value_int;
 
                 an_channel = EXT2_AN_CHANNEL;
-                ConvertADC();
+
+                while(ADCON0bits.GO == 0)
+                  ADCON0bits.GO = 1;
               }
               else
               {
@@ -2112,8 +2159,8 @@ int main(void)
 
                   if(winbond_return_value == 0)
                   {
-                    configuration.eeprom_ptr_wr.value = eeprom_ptr_wr;
-                    configuration.eeprom_data_count.value = eeprom_data_count;
+                    configuration.flash_ptr_wr.value = flash_ptr_wr;
+                    configuration.flash_data_count.value = flash_data_count;
                   }
                   else if(winbond_return_value == -1)
                     status_flags.bits.spi_bus_collision = 1;
@@ -2262,10 +2309,7 @@ void update_date(float error_sec)
   rtccTimeDate rtcc_time_date;
 
   struct tm date_structure;
-  static time_t time_by_rn131_start = 0;
-  if(time_by_rn131_start == 0)
-    time_by_rn131_start = time_by_rn131;
-  
+    
   RtccReadTimeDate(&rtcc_time_date);
 
   date_structure.tm_year = BCDToDecimal(rtcc_time_date.f.year) + 100;
@@ -2278,12 +2322,16 @@ void update_date(float error_sec)
 
   time_by_rn131 = mktime(&date_structure);
 
+  if(error_sec != 0)
+    time_by_rn131 += (unsigned long)((time_by_rn131 - time_by_rn131_start) * error_sec);
+  
   // ho bisogno di compensare l'errore commesso dal rtc dovuto ad un clock diverso
   // da quello atteso. Siccome la frequenza tipica dell'oscillatore interno è più
   // elevata dei 32768 Hz previsti, un secondo verrà conteggiato in anticipo
   // commettendo un errore in eccesso sulla data. Per questo devo
   // sottrarre l'errore moltiplicandolo per i secondi passati
-  time_by_rn131 -= (unsigned long)((time_by_rn131 - time_by_rn131_start) * error_sec);
+
+  //time_by_rn131 -= (unsigned long)((time_by_rn131 - time_by_rn131_start) * error_sec);
 }
 
 int BCDToDecimal(char bcdByte)
@@ -2304,9 +2352,22 @@ void message_load_uart(const char *message)
   uart2_buffer_tx_seq_load(buffer, strlen(buffer));
 }
 
+/**
+ * Richiama la funzione ping_send() preoccupandosi di entrare ed uscire dalla
+ * modalità comandi.
+ *
+ * @return 0: in elaborazione
+ *         1: ping inviato con successo
+ *         2: errore nell'invio del ping
+ *
+ * @remark: la funzione entrerà in modalità comando, nel caso non ci si trovi
+ * già, e ne uscirà appena si avrà la risposta alla richiesta di ping.
+ */
 int ping(void)
 {
   static int ping_status = 0;
+  static char exit_from_cmd_mode = 0;
+  
   int ping_result = 0;
 
   switch(ping_status)
@@ -2314,6 +2375,7 @@ int ping(void)
     case 0:
       if(rn131.cmd_mode == 0)
       {
+        exit_from_cmd_mode = 1;
         if(rn131.cmd_mode_rqst == 0)
         {
           message_load_uart("$$$");
@@ -2326,30 +2388,36 @@ int ping(void)
         ping_status = 1;
 
     case 1:
-      ping_result = ping_send();
+      ping_result = ping_send(-1);
       if(ping_result == 1)
-      {
-        message_load_uart("exit\r");
-        rn131.cmd_mode_exit_rqst = 1;
         ping_status = 2;
-      }
       else if(ping_result == -1)
       {
         ping_status = 0;
         return -1;
       }
-      break;
+      else
+        break;
 
     case 2:
-      if(rn131.cmd_mode == 0)
+      if(exit_from_cmd_mode == 1)
+      {
+        if(rn131.cmd_mode == 0)
+        {
+          exit_from_cmd_mode = 0;
+          ping_status = 0;
+          return 1;
+        }
+        else if(rn131.cmd_mode_exit_rqst == 0)
+        {
+          message_load_uart("exit\r");
+          rn131.cmd_mode_exit_rqst = 1;
+        }
+      }
+      else
       {
         ping_status = 0;
         return 1;
-      }
-      else if(rn131.cmd_mode_exit_rqst == 0)
-      {
-        message_load_uart("exit\r");
-        rn131.cmd_mode_exit_rqst = 1;
       }
       break;
   }
@@ -2357,29 +2425,59 @@ int ping(void)
   return 0;
 }
 
-int ping_send(void)
+/**
+ * Macchina a stati che invia una richiesta di ping e discrimina se il messaggio
+ * è stato inviato correttamente o meno.
+ *
+ * @return 0: messaggio caricato nel buffer circolare, ma nessuna risposta ricevuta
+ *         1: richiesta inviata correttamente
+ *        -1: errore nell'invio della richiesta
+ *
+ * @remark: la macchina è formata da 2 stati. Lo stato 0 invia la richiesta di
+ * ping, mentre lo stato 1 controlla il messaggio ricevuto e restituisce il valore
+ * corrispondente. Questa funzione deve essere richiamata fino a quando il valore
+ * restituito è diverso da 0, altrimenti lo stato iniziale non sarà lo 0.
+ *
+ * @attention Per utilizzare questa funzione il modulo rn131 deve essere in modalità comandi.
+ */
+int ping_send(int state)
 {
   static int ping_status = 0;
 
+  if(state >= 0)
+    ping_status = state;
+  
   switch(ping_status)
   {
     case 0:
-      message_load_uart("ping dgoogle.it\r");
+      //message_load_uart("ping dgoogle.it\r");
+      message_load_uart("ping dspinitalia.com\r");
       
       ping_status = 1;
       break;
 
     case 1:
-      if(rn131_parse_message(buffer, "Ping try"))
+      // Devo filtrare la porzione in cui si indica la versione del firmware 
+      // (es. "<4.41> ", però non posso codificarla hardware perchè voglio essere
+      // sganciato dalla versione specifica. La soluzione è saltare questo valore.
+      if(strlen(buffer) > 7)
       {
-        ping_status = 0;
-        return 1;
+        if(rn131_parse_message(&buffer[7], "PING reply"))
+        {
+          ping_status = 0;
+          return 1;
+        }
       }
-      else if(rn131_parse_message(buffer, "ERR: "))
+
+      if(rn131_parse_message(buffer, "ERR: "))
       {
         ping_status = 0;
         return -1;
       }
+      break;
+
+    default:
+      ping_status = 0;
       break;
   }
 
@@ -2402,7 +2500,7 @@ int download_configuration_ftp(void)
   }
   else if(config_req_sent == 0)
   {
-    ping_result = ping_send();
+    ping_result = ping();
     
     if(ping_result == 1)
     {
@@ -2501,6 +2599,9 @@ void sleep_enter(void)
   if(UART2_INTERRUPT_RX == 0)
     while(uart2_buffer_rx_load());
 
+  if(calib_clock_rqst == 0)
+    calib_clock_rqst = 1;
+    
   // scarico i buffer circolari
   uart2_flush_buffers();
 
@@ -2517,5 +2618,86 @@ void sleep_enter(void)
   communication_ready = 0;
   tcp_start_timer_flag = -1;
 
+  led_no_err = 0;
   SLEEP();
+}
+
+/**
+ * Legge i dati dalla flash e li carica sulla seriale per inviarli tramite wifi.
+ *
+ * Prima di effettuare la lettura viene verificato che ci sia abbastanza memoria
+ * nel buffer di trasmissione.
+ *
+ * @return numero di byte letti dalla flash ed inviati al modulo wifi.
+ *
+ * @remark La lettura dalla flash non comporta l'incremento automatico dei
+ * puntantori interno. Questo consente di controllare che effettivamente il dato
+ * sia stato inviato e ricevuto, prima di cancellarlo dalla flash.
+ */
+long wifi_send_data()
+{
+  long data_to_send = 0;
+  int uart_empty_space = 0; /**< numero di byte rimanenti nel buffer dalla uart */
+  udiv_t data_frame_number; /**< da qui prendo il quoziente per il calcolo del numero massimo di byte che posso leggere dalla eeprom */
+  char ascii_buffer[UART2_BUFFER_SIZE_TX];
+
+  data_frame_number.quot = 0;
+  data_frame_number.rem = 0;
+  
+  if(SSP2CON1bits.SSPEN == 0)
+    spi_open();
+
+  // Voglio convertire i dati esadecimali in stringhe ascii: visto che ogni
+  // byte è rappresentato da 2 caratteri, ho bisogno del doppio dello spazio
+  // nel buffer di trasmissione. Inoltre voglio inserire il MAC address
+  // del dispositivo rn131, che è di 18 caratteri
+  uart_empty_space = (uart2_get_tx_buffer_empty_space() >> 1) - 18;
+
+  if(uart_empty_space > 0)
+    data_frame_number = udiv(uart_empty_space - 1, sizeof(union sample_union));
+  else
+  {
+    uart_empty_space = 0;
+    return 0;
+  }
+    
+  // leggo dall'eeprom e carico i dati sulla seriale. Devo riservarmi l'ultimo
+  // carattere per inserire quello di fine messaggio. Inoltre devo inviare
+  // dati non frammentati.
+  data_to_send = winbond_data_send(buffer, data_frame_number.quot * sizeof(union sample_union));
+
+  if(data_to_send > 0)
+  {
+    long i;
+    char ascii_hex[3];
+
+    strcat(ascii_buffer,  rn131.mac);
+    for(i = 0; i < data_to_send; i++)
+    {
+      sprintf(ascii_hex, "%.02x", buffer[i]);
+      strcat(ascii_buffer,  ascii_hex);
+    }
+
+    strcat(ascii_buffer, end_of_message);
+
+    uart2_buffer_tx_seq_load(ascii_buffer, strlen(ascii_buffer));
+
+    while(uart2_status.buffer_tx_empty == 0)
+    {
+      uart2_buffer_send();
+
+      if(UART2_INTERRUPT_RX == 0)
+        uart2_buffer_rx_load();
+    }
+
+    // resetto il buffer, così che i valori vengano appesi partendo dall'inizio
+    ascii_buffer[0] = '\0';
+
+    tcp_start_timer_flag = 1;
+  }
+
+  if(SSP2CON1bits.SSPEN == 1)
+    spi_close();
+
+  return data_to_send;
 }

@@ -74,9 +74,10 @@ char rn131_connection_init(char *buffer, int rn131_message_length)
     // Reset status flags
     rn131.connected = 0;
     rn131.tcp_open = 0;
-    rn131.tcp_error = 0;
+    rn131.network_error = 0;
     rn131.cmd_mode_exit_rqst = 0;
     rn131.cmd_mode_reboot_rqst = 0;
+    rn131.cmd_mode_ping_rqst = 0;
     rn131.cmd_http_rqst = 0;
     rn131.cmd_mode_rqst = 0;
     rn131.cmd_mode = 0;
@@ -110,6 +111,20 @@ char rn131_connection_init(char *buffer, int rn131_message_length)
   
   if(rn131.ready == 1)
   {
+    if(rn131_parse_message(buffer, "Auto-") == 1)
+    {
+      //Auto-Assoc ROS_MASTER chan=0 mode=NONE FAILED
+      rn131_parse_ptr = strchr(buffer, ' '); // ROS_MASTER chan=0 mode=NONE FAILED
+      rn131_parse_ptr = strchr(rn131_parse_ptr + 1, ' '); // chan=0 mode=NONE FAILED
+      rn131_parse_ptr = strchr(rn131_parse_ptr + 1, ' '); // mode=NONE FAILED
+
+      // Se "mode" è NONE allora non è stato possibile associarsi
+      if(rn131_parse_message(rn131_parse_ptr, " mode=NONE") == 1)
+        rn131.network_error = 1;
+
+      return 1;
+    }
+
     if(rn131_parse_message(buffer, "Listen on ") == 1)
     {
       rn131.connected = 1;
@@ -184,8 +199,6 @@ char rn131_parse_message(char *buffer, const char *message)
  * @return Un char che indica se è stato riconosciuto uno dei messaggi associati
  * all'ora
  *
- * @remarks Una volta che viene acquisita l'ora esatta, viene aggiornata la
- * variabile globale time_by_rn131.
  */
 char rn131_command_show_time(char *message, time_t *time_by_rn131)
 {
@@ -236,7 +249,7 @@ char rn131_command_show_time(char *message, time_t *time_by_rn131)
       time[5] = 0;
       *time_by_rn131 += atol(time) * 100000;
       rn131.time_set = 1;
-      return 1;
+      return 2;
 
     default:
       time_set = 0;
@@ -256,9 +269,10 @@ void rn131_reset_flag(void)
 {
   rn131.connected = 0;
   rn131.tcp_open = 0;
-  rn131.tcp_error = 0;
+  rn131.network_error = 0;
   rn131.cmd_mode_exit_rqst = 0;
   rn131.cmd_mode_reboot_rqst = 0;
+  rn131.cmd_mode_ping_rqst = 0;
   rn131.cmd_http_rqst = 0;
   rn131.cmd_mode_rqst = 0;
   rn131.time_set_rqst = 0;

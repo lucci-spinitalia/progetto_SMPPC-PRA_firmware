@@ -43,6 +43,7 @@ struct rn131_struct
   char cmd_mode_rqst; /**< flag di richiesta abilitazione modalità comandi*/
   char cmd_mode_exit_rqst; /**< richiesta di uscita dalla modalità comandi*/
   char cmd_mode_reboot_rqst; /**< richieta riavvio modulo*/
+  char cmd_mode_ping_rqst; /**< richiesta ping */
   char cmd_http_rqst; /**< richiesta di esecuzione comando dal server http */
   char cmd_http[256]; /**< comando dal server http */
   char time_set_rqst; /**< richiesta di sincronizzazione del tempo con il server ntp*/
@@ -50,7 +51,7 @@ struct rn131_struct
   unsigned ready :1; /**< indica che il modulo è pronto per ricevere dati*/
   unsigned connected :1; /**< indica che è stato assegnato un indirizzo ip al modulo ed ha accesso alla rete*/
   unsigned tcp_open :1; /**< indica se è stata aperta una connessione tcp */
-  unsigned tcp_error :1; /**< indica se c'è stato un errore nel connettersi all'host predefinito */
+  unsigned network_error :1; /**< indica se c'è stato un errore nel connettersi all'host predefinito */
   unsigned cmd_mode :1; /**< indica se ci si trova in modalità comandi*/
   unsigned time_set :1; /**< tempo sincronizzato correttamente con il server ntp*/
   unsigned ap_mode :1; /**< indica se si trova in modalità access point */
